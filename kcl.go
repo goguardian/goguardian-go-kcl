@@ -25,14 +25,14 @@ type kclProcess struct {
 	shardID         string
 }
 
-//Record format comes from https://github.com/awslabs/amazon-kinesis-client/blob/master/amazon-kinesis-client-multilang/src/main/java/software/amazon/kinesis/multilang/package-info.java
+// Record format comes from https://github.com/awslabs/amazon-kinesis-client/blob/master/amazon-kinesis-client-multilang/src/main/java/software/amazon/kinesis/multilang/package-info.java
 type Record struct {
 	Data           []byte `json:"data"`
 	PartitionKey   string `json:"partitionKey"`
 	SequenceNumber string `json:"sequenceNumber"`
 }
 
-//message format comes from https://github.com/awslabs/amazon-kinesis-client/blob/master/amazon-kinesis-client-multilang/src/main/java/software/amazon/kinesis/multilang/package-info.java
+// message format comes from https://github.com/awslabs/amazon-kinesis-client/blob/master/amazon-kinesis-client-multilang/src/main/java/software/amazon/kinesis/multilang/package-info.java
 type message struct {
 	Action     string   `json:"action"`
 	ShardID    string   `json:"shardId"`
