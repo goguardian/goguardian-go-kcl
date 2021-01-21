@@ -5,7 +5,7 @@ Kinesis Client Library for Go
 
 ## How to run
 
-### Pre requisities
+### Prerequisites
 
 - Install [Go](https://golang.org/)
 
