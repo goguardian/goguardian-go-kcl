@@ -55,7 +55,7 @@ func readMessage() (*message, error) {
 	reader := bufio.NewReader(os.Stdin)
 	bytes, err := reader.ReadBytes('\n')
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to read bytes")
 	}
 
 	var msg message
@@ -72,10 +72,9 @@ func (k *kclProcess) Run() error {
 		msg, err := readMessage()
 		if err != nil {
 			if err == io.EOF {
-				// TODO: Implement empty records sleep time
-				continue
+				panic("Unexpected end of file. Exiting!")
 			} else {
-				return errors.Wrap(err, "failed to read message")
+				return errors.New("failed to read message")
 			}
 		}
 
