@@ -1,6 +1,8 @@
 package kcl
 
-type InitializationInput struct{}
+type InitializationInput struct {
+	shardID string
+}
 type ProcessRecordsInput struct{}
 type LeaseLostInput struct{}
 type ShardEndedInput struct{}
