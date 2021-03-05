@@ -81,7 +81,7 @@ func (k *kclProcess) Run() error {
 		switch msg.Action {
 		case "initialize":
 			k.shardID = msg.ShardID
-			k.recordProcessor.Initialize(InitializationInput{
+			k.recordProcessor.Initialize(&InitializationInput{
 				shardID: k.shardID,
 			})
 

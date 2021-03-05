@@ -9,9 +9,9 @@ type ShardEndedInput struct{}
 type ShutdownRequestedInput struct{}
 
 type RecordProcessor interface {
-	Initialize(InitializationInput)
-	ProcessRecords(ProcessRecordsInput)
-	LeaseLost(LeaseLostInput)
-	ShardEnded(ShardEndedInput)
-	ShutdownRequested(ShutdownRequestedInput)
+	Initialize(*InitializationInput)
+	ProcessRecords(*ProcessRecordsInput)
+	LeaseLost(*LeaseLostInput)
+	ShardEnded(*ShardEndedInput)
+	ShutdownRequested(*ShutdownRequestedInput)
 }
