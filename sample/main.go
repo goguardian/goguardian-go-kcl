@@ -2,12 +2,15 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/goguardian/goguardian-go-kcl/kcl"
 )
 
 func main() {
-	processor := &sampleProcessor{}
+	processor := &sampleProcessor{
+		logger: log.New(os.Stderr, "", log.LstdFlags),
+	}
 	process := kcl.GetKCLProcess(processor)
 	err := process.Run()
 

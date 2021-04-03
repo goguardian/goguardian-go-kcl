@@ -88,7 +88,7 @@ func (k *kclProcess) Run() error {
 		case "processRecords":
 			// TODO: Implement this
 		case "leaseLost":
-			// TODO: Implement this
+			k.recordProcessor.LeaseLost(&LeaseLostInput{})
 		case "shardEnded":
 			// TODO: Implement this
 		case "shutdownRequested":
