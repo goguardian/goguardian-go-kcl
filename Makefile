@@ -7,9 +7,9 @@ build_sample_app:
 	go build -o ./sample/sample ./sample
 
 build_runner:
-	go build -o ./runner/runner ./runner
+	go build -o ./runner/cmd/runner ./runner/cmd
 
 build: build_runner build_sample_app
 
 run_sample: install_jars build
-	./runner/runner -jar jar -java `which java` -properties sample/sample.properties
+	./runner/cmd/runner -jar jar -java `which java` -properties sample/sample.properties

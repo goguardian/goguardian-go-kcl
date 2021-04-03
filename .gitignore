@@ -12,5 +12,5 @@
 *.out
 
 jar/
-runner/runner
+runner/cmd/runner
 sample/sample

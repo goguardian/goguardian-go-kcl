@@ -1,4 +1,4 @@
-package main
+package runner
 
 import (
 	"bytes"
@@ -13,12 +13,62 @@ import (
 	"github.com/pkg/errors"
 )
 
-type runner struct {
+type Option func(*Runner)
+
+func WithLogger(logger *log.Logger) Option {
+	return func(runner *Runner) {
+		runner.logger = logger
+	}
+}
+
+func WithPathToJavaBinary(pathToJavaBinary string) Option {
+	return func(runner *Runner) {
+		runner.pathToJavaBinary = pathToJavaBinary
+	}
+}
+
+func WithPathToJarFolder(pathToJarFolder string) Option {
+	return func(runner *Runner) {
+		runner.pathToJarFolder = pathToJarFolder
+	}
+}
+
+func WithPathToPropertiesFile(pathToPropertiesFile string) Option {
+	return func(runner *Runner) {
+		runner.pathToPropertiesFile = pathToPropertiesFile
+	}
+}
+
+type Runner struct {
 	logger *log.Logger
 
 	pathToJavaBinary     string
 	pathToPropertiesFile string
 	pathToJarFolder      string
+}
+
+func GetRunner(opts ...Option) (*Runner, error) {
+	runner := &Runner{
+		logger: log.New(os.Stdout, "", log.LstdFlags),
+	}
+
+	for _, opt := range opts {
+		opt(runner)
+	}
+
+	if runner.pathToJavaBinary == "" {
+		return nil, errors.New("missing path to java binary")
+	}
+
+	if runner.pathToPropertiesFile == "" {
+		return nil, errors.New("missing path to properties folder")
+	}
+
+	if runner.pathToJarFolder == "" {
+		return nil, errors.New("missing path to jar folder")
+	}
+
+	return runner, nil
 }
 
 func getJarPaths(jarFolder string) ([]string, error) {
@@ -42,7 +92,7 @@ func getJarPaths(jarFolder string) ([]string, error) {
 	return jarPaths, nil
 }
 
-func (r *runner) runJavaDaemon() error {
+func (r *Runner) RunJavaDaemon() error {
 	daemonClass := "software.amazon.kinesis.multilang.MultiLangDaemon"
 	jarPaths, err := getJarPaths(r.pathToJarFolder)
 	if err != nil {
