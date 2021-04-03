@@ -29,7 +29,7 @@ func main() {
 func download(dstPath string) []string {
 	filenames := make([]string, len(packages))
 	for i, pkg := range packages {
-		filename := path.Join(dstPath, "jar", pkg.Name())
+		filename := path.Join(dstPath, pkg.Name())
 
 		if _, err := os.Stat(filename); os.IsNotExist(err) {
 			downloadFile(filename, pkg.URL())
