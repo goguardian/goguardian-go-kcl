@@ -1,16 +1,24 @@
 package kcl
 
-type InitializationInput struct {
-	shardID string
-}
-type ProcessRecordsInput struct{}
-type LeaseLostInput struct{}
-type ShardEndedInput struct{}
-type ShutdownRequestedInput struct{}
+type (
+	InitializationInput struct {
+		shardID string
+	}
+	ProcessRecordsInput struct {
+		Records []Record
+	}
+	ShouldCheckpointInput struct {
+		SourceCallType string
+	}
+	LeaseLostInput         struct{}
+	ShardEndedInput        struct{}
+	ShutdownRequestedInput struct{}
+)
 
 type RecordProcessor interface {
 	Initialize(*InitializationInput)
 	ProcessRecords(*ProcessRecordsInput)
+	ShouldCheckpoint(*ShouldCheckpointInput) (ShouldCheckpoint bool, Checkpoint string)
 	LeaseLost(*LeaseLostInput)
 	ShardEnded(*ShardEndedInput)
 	ShutdownRequested(*ShutdownRequestedInput)

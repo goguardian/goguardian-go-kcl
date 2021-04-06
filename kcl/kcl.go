@@ -86,7 +86,14 @@ func (k *kclProcess) Run() error {
 			})
 
 		case "processRecords":
-			// TODO: Implement this
+			k.recordProcessor.ProcessRecords(&ProcessRecordsInput{
+				Records: msg.Records,
+			})
+			err = k.handleCheckpoint("processRecords")
+			if err != nil {
+				return err
+			}
+
 		case "leaseLost":
 			k.recordProcessor.LeaseLost(&LeaseLostInput{})
 		case "shardEnded":
@@ -98,4 +105,35 @@ func (k *kclProcess) Run() error {
 		}
 		writeStatus(msg.Action)
 	}
+}
+
+func (k *kclProcess) handleCheckpoint(sourceCallType string) error {
+	checkpointInput := &ShouldCheckpointInput{
+		sourceCallType,
+	}
+
+	shouldCheckpoint, checkpoint := k.recordProcessor.ShouldCheckpoint(checkpointInput)
+	if shouldCheckpoint {
+		// Write checkpoint and immediately check for acknowledgement
+		checkpointMsg := fmt.Sprintf("\n{\"action\": \"checkpoint\", \"sequenceNumber\": \"%s\"}\n", checkpoint)
+		if sourceCallType == "shardEnded" {
+			checkpointMsg = fmt.Sprintf("\n{\"action\": \"checkpoint\", \"sequenceNumber\": null}\n")
+		}
+
+		fmt.Printf(checkpointMsg)
+
+		checkpointMsgOutput, err := readMessage()
+		if err != nil {
+			return errors.Wrap(err, "failed to read message for checkpoint")
+		}
+
+		switch checkpointMsgOutput.Action {
+		case "checkpoint":
+			// successful checkpoint
+		default:
+			// unsuccessful checkpoint
+			return errors.New("Unknown message. Expecting checkpoint message")
+		}
+	}
+	return nil
 }
