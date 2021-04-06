@@ -68,6 +68,7 @@ func readMessage() (*message, error) {
 }
 
 func (k *kclProcess) Run() error {
+	shouldExit := false
 	for {
 		msg, err := readMessage()
 		if err != nil {
@@ -89,34 +90,53 @@ func (k *kclProcess) Run() error {
 			k.recordProcessor.ProcessRecords(&ProcessRecordsInput{
 				Records: msg.Records,
 			})
-			err = k.handleCheckpoint("processRecords")
+			err = k.handleCheckpoint(&ShouldCheckpointInput{
+				SourceCallType: "processRecords",
+			})
 			if err != nil {
 				return err
 			}
 
 		case "leaseLost":
 			k.recordProcessor.LeaseLost(&LeaseLostInput{})
+
 		case "shardEnded":
-			// TODO: Implement this
+			err = k.handleCheckpoint(&ShouldCheckpointInput{
+				SourceCallType: "shardEnded",
+			})
+			if err != nil {
+				return err
+			}
+			shouldExit = true
+
 		case "shutdownRequested":
-			// TODO: Implement this
+			err = k.handleCheckpoint(&ShouldCheckpointInput{
+				SourceCallType: "shutdownRequested",
+				SequenceNumber: msg.Checkpoint,
+			})
+			if err != nil {
+				return err
+			}
+			shouldExit = true
+
 		default:
 			// TODO: Implement this
+
 		}
 		writeStatus(msg.Action)
+
+		if shouldExit {
+			return nil
+		}
 	}
 }
 
-func (k *kclProcess) handleCheckpoint(sourceCallType string) error {
-	checkpointInput := &ShouldCheckpointInput{
-		sourceCallType,
-	}
-
+func (k *kclProcess) handleCheckpoint(checkpointInput *ShouldCheckpointInput) error {
 	shouldCheckpoint, checkpoint := k.recordProcessor.ShouldCheckpoint(checkpointInput)
 	if shouldCheckpoint {
 		// Write checkpoint and immediately check for acknowledgement
 		checkpointMsg := fmt.Sprintf("\n{\"action\": \"checkpoint\", \"sequenceNumber\": \"%s\"}\n", checkpoint)
-		if sourceCallType == "shardEnded" {
+		if checkpointInput.SourceCallType == "shardEnded" {
 			checkpointMsg = fmt.Sprintf("\n{\"action\": \"checkpoint\", \"sequenceNumber\": null}\n")
 		}
 
@@ -125,6 +145,10 @@ func (k *kclProcess) handleCheckpoint(sourceCallType string) error {
 		checkpointMsgOutput, err := readMessage()
 		if err != nil {
 			return errors.Wrap(err, "failed to read message for checkpoint")
+		}
+
+		if checkpointMsgOutput.Error != "" {
+			return errors.New(fmt.Sprintf("Error %s when checkpointing", checkpointMsgOutput.Error))
 		}
 
 		switch checkpointMsgOutput.Action {
