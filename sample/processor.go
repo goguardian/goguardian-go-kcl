@@ -7,7 +7,8 @@ import (
 )
 
 type sampleProcessor struct {
-	logger *log.Logger
+	logger           *log.Logger
+	latestCheckpoint string
 }
 
 func (s *sampleProcessor) Initialize(input *kcl.InitializationInput) {
@@ -16,11 +17,14 @@ func (s *sampleProcessor) Initialize(input *kcl.InitializationInput) {
 
 func (s *sampleProcessor) ProcessRecords(input *kcl.ProcessRecordsInput) {
 	s.printInput("ProcessRecords", input)
+	for _, record := range input.Records {
+		s.latestCheckpoint = record.SequenceNumber
+	}
 }
 
 func (s *sampleProcessor) ShouldCheckpoint(input *kcl.ShouldCheckpointInput) (ShouldCheckpoint bool, Checkpoint string) {
 	s.printInput("ShouldCheckpoint", input)
-	return true, ""
+	return true, s.latestCheckpoint
 }
 
 func (s *sampleProcessor) LeaseLost(input *kcl.LeaseLostInput) {

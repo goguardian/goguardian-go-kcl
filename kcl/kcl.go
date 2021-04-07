@@ -124,7 +124,7 @@ func (k *kclProcess) Run() error {
 			shouldExit = true
 
 		default:
-			// TODO: Implement this
+			return errors.New("Unknown message")
 
 		}
 		writeStatus(msg.Action)
