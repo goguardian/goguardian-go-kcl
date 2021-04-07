@@ -101,6 +101,7 @@ func (k *kclProcess) Run() error {
 			k.recordProcessor.LeaseLost(&LeaseLostInput{})
 
 		case "shardEnded":
+			k.recordProcessor.ShardEnded(&ShardEndedInput{})
 			err = k.handleCheckpoint(&ShouldCheckpointInput{
 				SourceCallType: "shardEnded",
 			})
@@ -110,9 +111,12 @@ func (k *kclProcess) Run() error {
 			shouldExit = true
 
 		case "shutdownRequested":
+			k.recordProcessor.ShutdownRequested(&ShutdownRequestedInput{
+				SequenceNumber: msg.Checkpoint,
+			})
+
 			err = k.handleCheckpoint(&ShouldCheckpointInput{
 				SourceCallType: "shutdownRequested",
-				SequenceNumber: msg.Checkpoint,
 			})
 			if err != nil {
 				return err

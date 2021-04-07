@@ -9,11 +9,12 @@ type (
 	}
 	ShouldCheckpointInput struct {
 		SourceCallType string
-		SequenceNumber string
 	}
 	LeaseLostInput         struct{}
 	ShardEndedInput        struct{}
-	ShutdownRequestedInput struct{}
+	ShutdownRequestedInput struct {
+		SequenceNumber string
+	}
 )
 
 type RecordProcessor interface {
