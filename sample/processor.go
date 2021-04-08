@@ -18,11 +18,6 @@ func (s *sampleProcessor) ProcessRecords(input *kcl.ProcessRecordsInput) {
 	s.printInput("ProcessRecords", input)
 }
 
-func (s *sampleProcessor) ShouldCheckpoint(input *kcl.ShouldCheckpointInput) (ShouldCheckpoint bool, Checkpoint string) {
-	s.printInput("ShouldCheckpoint", input)
-	return true, ""
-}
-
 func (s *sampleProcessor) LeaseLost(input *kcl.LeaseLostInput) {
 	s.printInput("LeastLost", input)
 }
