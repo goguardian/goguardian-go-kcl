@@ -41,6 +41,18 @@ type message struct {
 	Error      string   `json:"error"`
 }
 
+// message represents a status
+type statusMessage struct {
+	Action      string `json:"action"`
+	ResponseFor string `json:"responseFor"`
+}
+
+// message represents a checkpoint
+type checkpointMessage struct {
+	Action         string `json:"action"`
+	SequenceNumber string `json:"sequenceNumber"`
+}
+
 // Writes a line to the output file. The line is preceeded and followed by a new
 // line because other libraries could be writing to the output file as well
 // (e.g. some libs might write debugging info to STDOUT) so we would like to
@@ -48,7 +60,15 @@ type message struct {
 // MultiLangDaemon can understand them.  (e.g. '{"action" : "status",
 // "responseFor" : "<someAction>"}')
 func writeStatus(action string) {
-	fmt.Printf("\n{\"action\": \"status\", \"responseFor\": \"%s\"}\n", action)
+	rawStatus, err := json.Marshal(statusMessage{
+		Action:      "status",
+		ResponseFor: action,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf(string(rawStatus))
 }
 
 func readMessage() (*message, error) {
@@ -90,37 +110,18 @@ func (k *kclProcess) Run() error {
 			k.recordProcessor.ProcessRecords(&ProcessRecordsInput{
 				Records: msg.Records,
 			})
-			err = k.handleCheckpoint(&ShouldCheckpointInput{
-				SourceCallType: "processRecords",
-			})
-			if err != nil {
-				return err
-			}
 
 		case "leaseLost":
 			k.recordProcessor.LeaseLost(&LeaseLostInput{})
 
 		case "shardEnded":
 			k.recordProcessor.ShardEnded(&ShardEndedInput{})
-			err = k.handleCheckpoint(&ShouldCheckpointInput{
-				SourceCallType: "shardEnded",
-			})
-			if err != nil {
-				return err
-			}
 			shouldExit = true
 
 		case "shutdownRequested":
 			k.recordProcessor.ShutdownRequested(&ShutdownRequestedInput{
 				SequenceNumber: msg.Checkpoint,
 			})
-
-			err = k.handleCheckpoint(&ShouldCheckpointInput{
-				SourceCallType: "shutdownRequested",
-			})
-			if err != nil {
-				return err
-			}
 			shouldExit = true
 
 		default:
@@ -135,33 +136,34 @@ func (k *kclProcess) Run() error {
 	}
 }
 
-func (k *kclProcess) handleCheckpoint(checkpointInput *ShouldCheckpointInput) error {
-	shouldCheckpoint, checkpoint := k.recordProcessor.ShouldCheckpoint(checkpointInput)
-	if shouldCheckpoint {
-		// Write checkpoint and immediately check for acknowledgement
-		checkpointMsg := fmt.Sprintf("\n{\"action\": \"checkpoint\", \"sequenceNumber\": \"%s\"}\n", checkpoint)
-		if checkpointInput.SourceCallType == "shardEnded" {
-			checkpointMsg = fmt.Sprintf("\n{\"action\": \"checkpoint\", \"sequenceNumber\": null}\n")
-		}
+func (k *kclProcess) checkpointFunc(sequenceNumber string) error {
+	// Write checkpoint and immediately check for acknowledgement
 
-		fmt.Printf(checkpointMsg)
+	rawCheckpoint, err := json.Marshal(checkpointMessage{
+		Action:         "checkpoint",
+		SequenceNumber: sequenceNumber,
+	})
+	if err != nil {
+		return err
+	}
 
-		checkpointMsgOutput, err := readMessage()
-		if err != nil {
-			return errors.Wrap(err, "failed to read message for checkpoint")
-		}
+	fmt.Printf(string(rawCheckpoint))
 
-		if checkpointMsgOutput.Error != "" {
-			return errors.New(fmt.Sprintf("Error %s when checkpointing", checkpointMsgOutput.Error))
-		}
+	checkpointMsgOutput, err := readMessage()
+	if err != nil {
+		return errors.Wrap(err, "failed to read message for checkpoint")
+	}
 
-		switch checkpointMsgOutput.Action {
-		case "checkpoint":
-			// successful checkpoint
-		default:
-			// unsuccessful checkpoint
-			return errors.New("Unknown message. Expecting checkpoint message")
-		}
+	if checkpointMsgOutput.Error != "" {
+		return errors.New(fmt.Sprintf("Error %s when checkpointing", checkpointMsgOutput.Error))
+	}
+
+	switch checkpointMsgOutput.Action {
+	case "checkpoint":
+		// successful checkpoint
+	default:
+		// unsuccessful checkpoint
+		return errors.New("Unknown message. Expecting checkpoint message")
 	}
 	return nil
 }
