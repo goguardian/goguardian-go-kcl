@@ -1,6 +1,6 @@
 package kcl
 
-type CheckpointFunc = func(sequenceNumber string) error
+type CheckpointFunc = func(string) error
 
 type (
 	InitializationInput struct {
