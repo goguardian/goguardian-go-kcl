@@ -120,10 +120,8 @@ func (k *kclProcess) Run() error {
 
 		case "processRecords":
 			k.recordProcessor.ProcessRecords(&ProcessRecordsInput{
-				Records: msg.Records,
-				Checkpoint: func(sequenceNumber string) error {
-					return k.checkpoint(sequenceNumber)
-				},
+				Records:    msg.Records,
+				Checkpoint: k.checkpoint,
 			})
 
 		case "leaseLost":
@@ -131,18 +129,14 @@ func (k *kclProcess) Run() error {
 
 		case "shardEnded":
 			k.recordProcessor.ShardEnded(&ShardEndedInput{
-				Checkpoint: func(sequenceNumber string) error {
-					return k.checkpoint(sequenceNumber)
-				},
+				Checkpoint: k.checkpoint,
 			})
 			shouldExit = true
 
 		case "shutdownRequested":
 			k.recordProcessor.ShutdownRequested(&ShutdownRequestedInput{
 				SequenceNumber: msg.Checkpoint,
-				Checkpoint: func(sequenceNumber string) error {
-					return k.checkpoint(sequenceNumber)
-				},
+				Checkpoint:     k.checkpoint,
 			})
 			shouldExit = true
 
