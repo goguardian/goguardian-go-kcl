@@ -152,16 +152,23 @@ func (k *kclProcess) Run() error {
 	}
 }
 
-func (k *kclProcess) checkpoint(sequenceNumber string) error {
+func (k *kclProcess) checkpoint(sequenceNumber *string) error {
 	// Write checkpoint and immediately check for acknowledgement
-	k.logger.Printf("Comes inside checkpointFunc with seq number %s", sequenceNumber)
+	var rawCheckpoint []byte
+	var err error
 
-	rawCheckpoint, err := json.Marshal(checkpointMessage{
-		Action:         "checkpoint",
-		SequenceNumber: sequenceNumber,
-	})
-	if err != nil {
-		return err
+	if sequenceNumber == nil {
+		rawCheckpoint = []byte(
+			fmt.Sprintf("{\"action\": \"checkpoint\", \"sequenceNumber\": null}"),
+		)
+	} else {
+		rawCheckpoint, err = json.Marshal(checkpointMessage{
+			Action:         "checkpoint",
+			SequenceNumber: *sequenceNumber,
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	rawCheckpointFormatted := fmt.Sprintf("\n%s\n", string(rawCheckpoint))
