@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 
+	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 )
 
@@ -21,6 +23,7 @@ func GetKCLProcess(r RecordProcessor) KCLProcess {
 }
 
 type kclProcess struct {
+	logger          *log.Logger
 	recordProcessor RecordProcessor
 	shardID         string
 }
@@ -59,7 +62,7 @@ type checkpointMessage struct {
 // prevent our lines from being interlaced with other messages so the
 // MultiLangDaemon can understand them.  (e.g. '{"action" : "status",
 // "responseFor" : "<someAction>"}')
-func writeStatus(action string) {
+func (k *kclProcess) writeStatus(action string) {
 	rawStatus, err := json.Marshal(statusMessage{
 		Action:      "status",
 		ResponseFor: action,
@@ -68,7 +71,10 @@ func writeStatus(action string) {
 		panic(err)
 	}
 
-	fmt.Printf(string(rawStatus))
+	rawStatusFormatted := fmt.Sprintf("\n%s\n", string(rawStatus))
+	k.logger.Printf("Writing status %s", rawStatusFormatted)
+
+	fmt.Printf(rawStatusFormatted)
 }
 
 func readMessage() (*message, error) {
@@ -88,6 +94,12 @@ func readMessage() (*message, error) {
 }
 
 func (k *kclProcess) Run() error {
+	file, err := os.Create(fmt.Sprintf("kcl-log-%s", uuid.Must(uuid.NewV4()).String()))
+	if err != nil {
+		return err
+	}
+	k.logger = log.New(file, "", log.LstdFlags)
+
 	shouldExit := false
 	for {
 		msg, err := readMessage()
@@ -109,18 +121,28 @@ func (k *kclProcess) Run() error {
 		case "processRecords":
 			k.recordProcessor.ProcessRecords(&ProcessRecordsInput{
 				Records: msg.Records,
+				Checkpoint: func(sequenceNumber string) error {
+					return k.checkpoint(sequenceNumber)
+				},
 			})
 
 		case "leaseLost":
 			k.recordProcessor.LeaseLost(&LeaseLostInput{})
 
 		case "shardEnded":
-			k.recordProcessor.ShardEnded(&ShardEndedInput{})
+			k.recordProcessor.ShardEnded(&ShardEndedInput{
+				Checkpoint: func(sequenceNumber string) error {
+					return k.checkpoint(sequenceNumber)
+				},
+			})
 			shouldExit = true
 
 		case "shutdownRequested":
 			k.recordProcessor.ShutdownRequested(&ShutdownRequestedInput{
 				SequenceNumber: msg.Checkpoint,
+				Checkpoint: func(sequenceNumber string) error {
+					return k.checkpoint(sequenceNumber)
+				},
 			})
 			shouldExit = true
 
@@ -128,7 +150,7 @@ func (k *kclProcess) Run() error {
 			return errors.New("Unknown message")
 
 		}
-		writeStatus(msg.Action)
+		k.writeStatus(msg.Action)
 
 		if shouldExit {
 			return nil
@@ -136,8 +158,9 @@ func (k *kclProcess) Run() error {
 	}
 }
 
-func (k *kclProcess) checkpointFunc(sequenceNumber string) error {
+func (k *kclProcess) checkpoint(sequenceNumber string) error {
 	// Write checkpoint and immediately check for acknowledgement
+	k.logger.Printf("Comes inside checkpointFunc with seq number %s", sequenceNumber)
 
 	rawCheckpoint, err := json.Marshal(checkpointMessage{
 		Action:         "checkpoint",
@@ -147,7 +170,10 @@ func (k *kclProcess) checkpointFunc(sequenceNumber string) error {
 		return err
 	}
 
-	fmt.Printf(string(rawCheckpoint))
+	rawCheckpointFormatted := fmt.Sprintf("\n%s\n", string(rawCheckpoint))
+
+	k.logger.Printf("Writing checkpoint %s", rawCheckpointFormatted)
+	fmt.Printf(rawCheckpointFormatted)
 
 	checkpointMsgOutput, err := readMessage()
 	if err != nil {

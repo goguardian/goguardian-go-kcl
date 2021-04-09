@@ -20,6 +20,7 @@ func (s *sampleProcessor) ProcessRecords(input *kcl.ProcessRecordsInput) {
 	s.printInput("ProcessRecords", input)
 	for _, record := range input.Records {
 		s.latestSequenceNumber = record.SequenceNumber
+		s.logger.Printf("Got seq number %s", record.SequenceNumber)
 	}
 	err := input.Checkpoint(s.latestSequenceNumber)
 	fmt.Println(err)

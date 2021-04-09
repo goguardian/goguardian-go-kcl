@@ -22,4 +22,4 @@ runner/cmd/runner
 sample/sample
 
 # Log files
-log*
+*log*

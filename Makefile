@@ -13,10 +13,11 @@ build_runner:
 build: build_runner build_sample_app
 
 clean: 
-	rm -rf log*
-
-build_and_run_sample: install_jars build
-	./runner/cmd/runner -jar jar -java `which java` -properties sample/sample.properties
+	rm -rf *log*
 
 run_sample:
 	./runner/cmd/runner -jar jar -java `which java` -properties sample/sample.properties
+
+build_and_run_sample: build run_sample
+
+download_build_and_run_sample: install_jars build_and_run_sample
