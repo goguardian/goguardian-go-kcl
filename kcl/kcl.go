@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/gofrs/uuid"
 	"github.com/pkg/errors"
 )
 
@@ -16,16 +15,34 @@ type KCLProcess interface {
 	Run() error
 }
 
-func GetKCLProcess(r RecordProcessor) KCLProcess {
-	return &kclProcess{
+func GetKCLProcess(r RecordProcessor, opts ...Option) KCLProcess {
+	kclProcess := &kclProcess{
 		recordProcessor: r,
 	}
+
+	kclProcess.logger = &log.Logger{}
+
+	for _, opt := range opts {
+		opt(kclProcess)
+	}
+
+	return kclProcess
 }
 
 type kclProcess struct {
 	logger          *log.Logger
 	recordProcessor RecordProcessor
 	shardID         string
+}
+
+// Option signifies the type of options that can be passed to the kclProcess
+type Option func(*kclProcess)
+
+// WithLogger can be used to specify a logger
+func WithLogger(logger *log.Logger) Option {
+	return func(k *kclProcess) {
+		k.logger = logger
+	}
 }
 
 // Record format comes from https://github.com/awslabs/amazon-kinesis-client/blob/master/amazon-kinesis-client-multilang/src/main/java/software/amazon/kinesis/multilang/package-info.java
@@ -94,12 +111,6 @@ func readMessage() (*message, error) {
 }
 
 func (k *kclProcess) Run() error {
-	file, err := os.Create(fmt.Sprintf("kcl-log-%s", uuid.Must(uuid.NewV4()).String()))
-	if err != nil {
-		return err
-	}
-	k.logger = log.New(file, "", log.LstdFlags)
-
 	shouldExit := false
 	for {
 		msg, err := readMessage()
