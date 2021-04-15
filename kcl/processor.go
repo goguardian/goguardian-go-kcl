@@ -1,12 +1,27 @@
 package kcl
 
-type InitializationInput struct {
-	shardID string
-}
-type ProcessRecordsInput struct{}
-type LeaseLostInput struct{}
-type ShardEndedInput struct{}
-type ShutdownRequestedInput struct{}
+type CheckpointFunc = func(*string) error
+
+type (
+	InitializationInput struct {
+		shardID string
+	}
+	ProcessRecordsInput struct {
+		Records    []Record
+		Checkpoint CheckpointFunc
+	}
+	ShouldCheckpointInput struct {
+		SourceCallType string
+	}
+	LeaseLostInput  struct{}
+	ShardEndedInput struct {
+		Checkpoint CheckpointFunc
+	}
+	ShutdownRequestedInput struct {
+		SequenceNumber string
+		Checkpoint     CheckpointFunc
+	}
+)
 
 type RecordProcessor interface {
 	Initialize(*InitializationInput)

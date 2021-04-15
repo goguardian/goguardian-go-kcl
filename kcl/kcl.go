@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 
 	"github.com/pkg/errors"
@@ -14,15 +15,34 @@ type KCLProcess interface {
 	Run() error
 }
 
-func GetKCLProcess(r RecordProcessor) KCLProcess {
-	return &kclProcess{
+func GetKCLProcess(r RecordProcessor, opts ...Option) KCLProcess {
+	kclProcess := &kclProcess{
 		recordProcessor: r,
 	}
+
+	kclProcess.logger = &log.Logger{}
+
+	for _, opt := range opts {
+		opt(kclProcess)
+	}
+
+	return kclProcess
 }
 
 type kclProcess struct {
+	logger          *log.Logger
 	recordProcessor RecordProcessor
 	shardID         string
+}
+
+// Option signifies the type of options that can be passed to the kclProcess
+type Option func(*kclProcess)
+
+// WithLogger can be used to specify a logger
+func WithLogger(logger *log.Logger) Option {
+	return func(k *kclProcess) {
+		k.logger = logger
+	}
 }
 
 // Record format comes from https://github.com/awslabs/amazon-kinesis-client/blob/master/amazon-kinesis-client-multilang/src/main/java/software/amazon/kinesis/multilang/package-info.java
@@ -41,14 +61,37 @@ type message struct {
 	Error      string   `json:"error"`
 }
 
+// message represents a status
+type statusMessage struct {
+	Action      string `json:"action"`
+	ResponseFor string `json:"responseFor"`
+}
+
+// message represents a checkpoint
+type checkpointMessage struct {
+	Action         string `json:"action"`
+	SequenceNumber string `json:"sequenceNumber"`
+}
+
 // Writes a line to the output file. The line is preceeded and followed by a new
 // line because other libraries could be writing to the output file as well
 // (e.g. some libs might write debugging info to STDOUT) so we would like to
 // prevent our lines from being interlaced with other messages so the
 // MultiLangDaemon can understand them.  (e.g. '{"action" : "status",
 // "responseFor" : "<someAction>"}')
-func writeStatus(action string) {
-	fmt.Printf("\n{\"action\": \"status\", \"responseFor\": \"%s\"}\n", action)
+func (k *kclProcess) writeStatus(action string) {
+	rawStatus, err := json.Marshal(statusMessage{
+		Action:      "status",
+		ResponseFor: action,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	rawStatusFormatted := fmt.Sprintf("\n%s\n", string(rawStatus))
+	k.logger.Printf("Writing status %s", rawStatusFormatted)
+
+	fmt.Printf(rawStatusFormatted)
 }
 
 func readMessage() (*message, error) {
@@ -68,6 +111,7 @@ func readMessage() (*message, error) {
 }
 
 func (k *kclProcess) Run() error {
+	shouldExit := false
 	for {
 		msg, err := readMessage()
 		if err != nil {
@@ -86,16 +130,78 @@ func (k *kclProcess) Run() error {
 			})
 
 		case "processRecords":
-			// TODO: Implement this
+			k.recordProcessor.ProcessRecords(&ProcessRecordsInput{
+				Records:    msg.Records,
+				Checkpoint: k.checkpoint,
+			})
+
 		case "leaseLost":
 			k.recordProcessor.LeaseLost(&LeaseLostInput{})
+
 		case "shardEnded":
-			// TODO: Implement this
+			k.recordProcessor.ShardEnded(&ShardEndedInput{
+				Checkpoint: k.checkpoint,
+			})
+			shouldExit = true
+
 		case "shutdownRequested":
-			// TODO: Implement this
+			k.recordProcessor.ShutdownRequested(&ShutdownRequestedInput{
+				SequenceNumber: msg.Checkpoint,
+				Checkpoint:     k.checkpoint,
+			})
+			shouldExit = true
+
 		default:
-			// TODO: Implement this
+			return errors.New("Unknown message")
+
 		}
-		writeStatus(msg.Action)
+		k.writeStatus(msg.Action)
+
+		if shouldExit {
+			return nil
+		}
 	}
+}
+
+func (k *kclProcess) checkpoint(sequenceNumber *string) error {
+	// Write checkpoint and immediately check for acknowledgement
+	var rawCheckpoint []byte
+	var err error
+
+	if sequenceNumber == nil {
+		rawCheckpoint = []byte(
+			fmt.Sprintf("{\"action\": \"checkpoint\", \"sequenceNumber\": null}"),
+		)
+	} else {
+		rawCheckpoint, err = json.Marshal(checkpointMessage{
+			Action:         "checkpoint",
+			SequenceNumber: *sequenceNumber,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	rawCheckpointFormatted := fmt.Sprintf("\n%s\n", string(rawCheckpoint))
+
+	k.logger.Printf("Writing checkpoint %s", rawCheckpointFormatted)
+	fmt.Printf(rawCheckpointFormatted)
+
+	checkpointMsgOutput, err := readMessage()
+	if err != nil {
+		return errors.Wrap(err, "failed to read message for checkpoint")
+	}
+
+	if checkpointMsgOutput.Error != "" {
+		return errors.New(fmt.Sprintf("Error %s when checkpointing", checkpointMsgOutput.Error))
+	}
+
+	switch checkpointMsgOutput.Action {
+	case "checkpoint":
+		// successful checkpoint
+	default:
+		// unsuccessful checkpoint
+		return errors.New("Unknown message. Expecting checkpoint message")
+	}
+	return nil
 }

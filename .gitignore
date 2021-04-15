@@ -14,6 +14,12 @@
 # vim tmp files
 *.swp
 
+#JAR dependencies
 jar/
+
+# Go binaries
 runner/cmd/runner
 sample/sample
+
+# Log files
+*log*
