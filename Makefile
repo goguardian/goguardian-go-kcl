@@ -18,6 +18,9 @@ clean:
 run_sample:
 	./runner/cmd/runner -jar jar -java `which java` -properties sample/sample.properties
 
+run_local_sample:
+	docker-compose up -d && ./runner/cmd/runner -jar jar -java `which java` -properties sample/sample.localstack.properties
+
 build_and_run_sample: build run_sample
 
 download_build_and_run_sample: install_jars build_and_run_sample

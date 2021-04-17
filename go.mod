@@ -3,6 +3,7 @@ module github.com/goguardian/goguardian-go-kcl
 go 1.15
 
 require (
+	github.com/aws/aws-sdk-go v1.15.78
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/hashicorp/go-getter v1.5.2
