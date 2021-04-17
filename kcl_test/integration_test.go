@@ -1,6 +1,11 @@
 package kcl_test
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
 	"testing"
 	"time"
 
@@ -120,6 +125,7 @@ func (t *testClient) deleteStream(streamName string, timeout time.Duration) erro
 func (t *testClient) putRecords(streamName string, records []string) error {
 	entries := []*kinesis.PutRecordsRequestEntry{}
 	for _, record := range records {
+		record := record
 		entries = append(entries, &kinesis.PutRecordsRequestEntry{
 			Data:         []byte(record),
 			PartitionKey: &record,
@@ -142,20 +148,67 @@ func (t *testClient) putRecords(streamName string, records []string) error {
 	return nil
 }
 
+func waitForLocalstack(timeout time.Duration) error {
+	ticker := time.NewTicker(timeout)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			return errors.New("timed out waiting for localstack to start")
+		default:
+		}
+
+		resp, err := http.Get(fmt.Sprintf("%s/health", localstackEndpoint))
+		if err != nil {
+			continue
+		}
+		defer resp.Body.Close()
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return errors.Wrap(err, "failed to read localstack health")
+		}
+
+		health := struct {
+			Services map[string]string `json:"services"`
+		}{}
+		err = json.Unmarshal(body, &health)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse localstack health")
+		}
+
+		if status, found := health.Services["kinesis"]; found && status == "running" {
+			return nil
+		}
+	}
+}
+
 func TestIntegration(t *testing.T) {
+	log.Println("waiting for localstack to start")
+	err := waitForLocalstack(30 * time.Second)
+	if err != nil {
+		t.Fatal("localstack is not running yet")
+	}
 	tClient := getTestClient()
-	err := tClient.deleteStream(testStreamName, 5*time.Second)
+
+	err = tClient.deleteStream(testStreamName, 5*time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	log.Println("creating kinesis stream")
 	err = tClient.createStream(testStreamName, 4, 5*time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	log.Println("putting records in kinesis stream")
 	err = tClient.putRecords(testStreamName, []string{"alice", "bob", "charlie"})
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	// TODO: figure out why this is needed to ensure stream is created
+	time.Sleep(10 * time.Second)
 }
