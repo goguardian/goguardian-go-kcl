@@ -192,12 +192,13 @@ func TestIntegration(t *testing.T) {
 	}
 	tClient := getTestClient()
 
+	log.Println("deleting kinesis stream if present")
 	err = tClient.deleteStream(testStreamName, 5*time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	log.Println("creating kinesis stream")
+	log.Println("creating new kinesis stream")
 	err = tClient.createStream(testStreamName, 4, 5*time.Second)
 	if err != nil {
 		t.Fatal(err)
@@ -208,7 +209,4 @@ func TestIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// TODO: figure out why this is needed to ensure stream is created
-	time.Sleep(10 * time.Second)
 }

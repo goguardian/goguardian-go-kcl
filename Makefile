@@ -28,5 +28,5 @@ start_localstack:
 stop_localstack:
 	docker-compose stop
 
-run_integ_test: start_localstack
-	go test -v ./kcl_test && ./runner/cmd/runner -jar jar -java `which java` -properties sample/sample.localstack.properties
+run_integ_test: build start_localstack
+	go test -count=1 -v ./kcl_test && ./runner/cmd/runner -jar jar -java `which java` -properties sample/sample.localstack.properties
