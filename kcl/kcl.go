@@ -18,9 +18,8 @@ type KCLProcess interface {
 func GetKCLProcess(r RecordProcessor, opts ...Option) KCLProcess {
 	kclProcess := &kclProcess{
 		recordProcessor: r,
+		logger:          log.New(os.Stderr, "", log.LstdFlags),
 	}
-
-	kclProcess.logger = &log.Logger{}
 
 	for _, opt := range opts {
 		opt(kclProcess)

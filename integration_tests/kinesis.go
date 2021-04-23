@@ -1,12 +1,10 @@
-package kcl_test
+package main
 
 import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
-	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -19,14 +17,13 @@ import (
 
 const (
 	localstackEndpoint = "http://localhost:4566"
-	testStreamName     = "sample_kinesis_stream"
 )
 
-type testClient struct {
+type localKinesis struct {
 	kClient *kinesis.Kinesis
 }
 
-func getTestClient() *testClient {
+func GetLocalKinesisClient() (*localKinesis, error) {
 	awsConfig := &aws.Config{
 		Endpoint: aws.String(localstackEndpoint),
 		Region:   aws.String("us-east-1"),
@@ -38,12 +35,17 @@ func getTestClient() *testClient {
 		}),
 	}
 
-	return &testClient{
-		kClient: kinesis.New(session.Must(session.NewSession(awsConfig))),
+	err := waitForLocalstack(30 * time.Second)
+	if err != nil {
+		errors.New("localstack is not running yet")
 	}
+
+	return &localKinesis{
+		kClient: kinesis.New(session.Must(session.NewSession(awsConfig))),
+	}, nil
 }
 
-func (t *testClient) createStream(streamName string, shardCount int64, timeout time.Duration) error {
+func (t *localKinesis) CreateStream(streamName string, shardCount int64, timeout time.Duration) error {
 	ticker := time.NewTicker(timeout)
 	defer ticker.Stop()
 
@@ -80,7 +82,7 @@ func (t *testClient) createStream(streamName string, shardCount int64, timeout t
 	}
 }
 
-func (t *testClient) deleteStream(streamName string, timeout time.Duration) error {
+func (t *localKinesis) DeleteStream(streamName string, timeout time.Duration) error {
 	_, err := t.kClient.DeleteStream(
 		&kinesis.DeleteStreamInput{
 			StreamName: &streamName,
@@ -93,9 +95,8 @@ func (t *testClient) deleteStream(streamName string, timeout time.Duration) erro
 			if e.Code() == "ResourceNotFoundException" {
 				return nil // stream already deleted
 			}
-		default:
-			return errors.Wrap(err, "failed to delete stream")
 		}
+		return errors.Wrap(err, "failed to delete stream")
 	}
 
 	ticker := time.Tick(timeout)
@@ -109,7 +110,14 @@ func (t *testClient) deleteStream(streamName string, timeout time.Duration) erro
 		if err != nil {
 			return errors.Wrap(err, "failed to list streams")
 		}
-		if len(resp.StreamNames) == 0 {
+
+		found := false
+		for _, name := range resp.StreamNames {
+			if *name == streamName {
+				found = true
+			}
+		}
+		if !found {
 			return nil
 		}
 
@@ -122,7 +130,7 @@ func (t *testClient) deleteStream(streamName string, timeout time.Duration) erro
 	}
 }
 
-func (t *testClient) putRecords(streamName string, records []string) error {
+func (t *localKinesis) PutRecords(streamName string, records []string) error {
 	entries := []*kinesis.PutRecordsRequestEntry{}
 	for _, record := range records {
 		record := record
@@ -181,32 +189,5 @@ func waitForLocalstack(timeout time.Duration) error {
 		if status, found := health.Services["kinesis"]; found && status == "running" {
 			return nil
 		}
-	}
-}
-
-func TestIntegration(t *testing.T) {
-	log.Println("waiting for localstack to start")
-	err := waitForLocalstack(30 * time.Second)
-	if err != nil {
-		t.Fatal("localstack is not running yet")
-	}
-	tClient := getTestClient()
-
-	log.Println("deleting kinesis stream if present")
-	err = tClient.deleteStream(testStreamName, 5*time.Second)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	log.Println("creating new kinesis stream")
-	err = tClient.createStream(testStreamName, 4, 5*time.Second)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	log.Println("putting records in kinesis stream")
-	err = tClient.putRecords(testStreamName, []string{"alice", "bob", "charlie"})
-	if err != nil {
-		t.Fatal(err)
 	}
 }

@@ -8,7 +8,7 @@ type (
 	}
 	ProcessRecordsInput struct {
 		Records    []Record
-		Checkpoint CheckpointFunc
+		Checkpoint CheckpointFunc `json:"-"`
 	}
 	ShouldCheckpointInput struct {
 		SourceCallType string

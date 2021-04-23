@@ -14,12 +14,16 @@
 # vim tmp files
 *.swp
 
+# mac files
+*.DS_Store
+
 #JAR dependencies
 jar/
 
 # Go binaries
 runner/cmd/runner
 sample/sample
+integration_tests/test_app
 
 # Log files
 *log*

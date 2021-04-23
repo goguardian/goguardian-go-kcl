@@ -10,7 +10,10 @@ build_sample_app:
 build_runner:
 	go build -o ./runner/cmd/runner ./runner/cmd
 
-build: build_runner build_sample_app
+build_integration_processor:
+	go build -o ./integration_tests/test_app ./integration_tests
+
+build: build_runner build_sample_app build_integration_processor
 
 clean: 
 	rm -rf *log*
@@ -29,4 +32,4 @@ stop_localstack:
 	docker-compose stop
 
 run_integ_test: build start_localstack
-	go test -count=1 -v ./kcl_test && ./runner/cmd/runner -jar jar -java `which java` -properties sample/sample.localstack.properties
+	go test -count=1 -v ./integration_tests
