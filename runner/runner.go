@@ -2,7 +2,6 @@ package runner
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -92,16 +91,16 @@ func getJarPaths(jarFolder string) ([]string, error) {
 	return jarPaths, nil
 }
 
-func (r *Runner) RunJavaDaemon() error {
+func (r *Runner) RunJavaDaemon(javaProperties ...string) (*exec.Cmd, error) {
 	daemonClass := "software.amazon.kinesis.multilang.MultiLangDaemon"
 	jarPaths, err := getJarPaths(r.pathToJarFolder)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	currentDir, err := os.Getwd()
 	if err != nil {
-		return errors.Wrap(err, "failed to get present working directeory")
+		return nil, errors.Wrap(err, "failed to get present working directeory")
 	}
 
 	//TODO: check to make sure the properties file exists in currentDir
@@ -115,6 +114,7 @@ func (r *Runner) RunJavaDaemon() error {
 		daemonClass,
 		r.pathToPropertiesFile,
 	}
+	args = append(javaProperties, args...)
 
 	cmd := exec.Command(r.pathToJavaBinary, args...)
 
@@ -124,14 +124,14 @@ func (r *Runner) RunJavaDaemon() error {
 
 	r.logger.Println("Starting java daemon process.")
 	if err = cmd.Start(); err != nil {
-		return errors.Wrap(err, "failed to run command to start java daemon")
+		return nil, errors.Wrap(err, "failed to run command to start java daemon")
 	}
 
+	// TODO: figure out if we should handle this for the user
 	// we need to be able to catch any system exits from the java daemon so we wait for the command
-	if err = cmd.Wait(); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed to run command to wait for java daemon with stderr: %s", stderr.String()))
-	}
-
-	r.logger.Println("Java daemon has exited.")
-	return nil
+	//if err = cmd.Wait(); err != nil {
+	//	return errors.Wrap(err, fmt.Sprintf("failed to run command to wait for java daemon with stderr: %s", stderr.String()))
+	//}
+	//r.logger.Println("Java daemon has exited.")
+	return cmd, nil
 }

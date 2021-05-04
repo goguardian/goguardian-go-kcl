@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"testing"
 	"text/template"
 	"time"
@@ -89,7 +90,6 @@ func TestRecordsReceived(t *testing.T) {
 		receivedRecords := map[string]bool{}
 		for {
 			req := <-receiver.processRecordsChan
-			fmt.Println("GOT REQUEST")
 			for _, record := range req.Records {
 				fmt.Println(record.Data)
 				receivedRecords[string(record.Data)] = true
@@ -102,12 +102,15 @@ func TestRecordsReceived(t *testing.T) {
 		}
 	}()
 
+	var cmd *exec.Cmd
 	go func() {
-		t.Fatal(r.RunJavaDaemon())
+		var err error
+		cmd, err = r.RunJavaDaemon("-Daws.accessKeyId=some_key", "-Daws.secretKey=some_secret_key")
+		if err != nil {
+			t.Fatal(err)
+		}
 	}()
 
 	<-testPassed
-	fmt.Println("DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD")
-	os.Exit(0)
-	// TODO: shutdown the java daemon
+	cmd.Process.Kill()
 }
