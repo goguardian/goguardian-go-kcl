@@ -21,6 +21,13 @@ Amazon has implemented a [MultiLangDaemon](https://github.com/awslabs/amazon-kin
 * Also ensure you have the $JAVA_HOME environment variable set. For MacOS see the guide here https://mkyong.com/java/how-to-set-java_home-environment-variable-on-mac-os-x/.
 
 ```bash
-make install_jars
 make run_integ_test
 ```
+
+### TODOs
+- [ ] Add unit tests to the kcl package
+- [ ] Add a license and contributing.md
+- [ ] Add a docs folder with more information
+- [ ] Update README
+ - [ ] Information on how to run the sample
+ - [ ] give attribution to the Python KCL

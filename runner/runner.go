@@ -127,11 +127,5 @@ func (r *Runner) RunJavaDaemon(javaProperties ...string) (*exec.Cmd, error) {
 		return nil, errors.Wrap(err, "failed to run command to start java daemon")
 	}
 
-	// TODO: figure out if we should handle this for the user
-	// we need to be able to catch any system exits from the java daemon so we wait for the command
-	//if err = cmd.Wait(); err != nil {
-	//	return errors.Wrap(err, fmt.Sprintf("failed to run command to wait for java daemon with stderr: %s", stderr.String()))
-	//}
-	//r.logger.Println("Java daemon has exited.")
 	return cmd, nil
 }
