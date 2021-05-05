@@ -29,5 +29,5 @@ make run_integ_test
 - [ ] Add a license and contributing.md
 - [ ] Add a docs folder with more information
 - [ ] Update README
- - [ ] Information on how to run the sample
- - [ ] give attribution to the Python KCL
+  - [ ] Information on how to run the sample
+  - [ ] give attribution to the Python KCL
