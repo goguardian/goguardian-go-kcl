@@ -3,46 +3,19 @@ package kcl
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
-	"io"
 	"log"
 	"os"
 
 	"github.com/pkg/errors"
 )
 
+var (
+	output = os.Stdout
+	input  = os.Stdin
+)
+
 type KCLProcess interface {
 	Run() error
-}
-
-func GetKCLProcess(r RecordProcessor, opts ...Option) KCLProcess {
-	kclProcess := &kclProcess{
-		recordProcessor: r,
-	}
-
-	kclProcess.logger = &log.Logger{}
-
-	for _, opt := range opts {
-		opt(kclProcess)
-	}
-
-	return kclProcess
-}
-
-type kclProcess struct {
-	logger          *log.Logger
-	recordProcessor RecordProcessor
-	shardID         string
-}
-
-// Option signifies the type of options that can be passed to the kclProcess
-type Option func(*kclProcess)
-
-// WithLogger can be used to specify a logger
-func WithLogger(logger *log.Logger) Option {
-	return func(k *kclProcess) {
-		k.logger = logger
-	}
 }
 
 // Record format comes from https://github.com/awslabs/amazon-kinesis-client/blob/master/amazon-kinesis-client-multilang/src/main/java/software/amazon/kinesis/multilang/package-info.java
@@ -61,16 +34,51 @@ type message struct {
 	Error      string   `json:"error"`
 }
 
-// message represents a status
+// statusMessage represents a status
 type statusMessage struct {
 	Action      string `json:"action"`
 	ResponseFor string `json:"responseFor"`
 }
 
-// message represents a checkpoint
+// checkpointMessage represents a checkpoint
 type checkpointMessage struct {
 	Action         string `json:"action"`
 	SequenceNumber string `json:"sequenceNumber"`
+}
+
+type kclProcess struct {
+	logger          *log.Logger
+	recordProcessor RecordProcessor
+	shardID         string
+
+	reader *bufio.Reader
+	writer *bufio.Writer
+}
+
+// Option signifies the type of options that can be passed to the kclProcess
+type Option func(*kclProcess)
+
+// WithLogger can be used to specify a logger
+func WithLogger(logger *log.Logger) Option {
+	return func(k *kclProcess) {
+		k.logger = logger
+	}
+}
+
+func GetKCLProcess(r RecordProcessor, opts ...Option) KCLProcess {
+	kclProcess := &kclProcess{
+		recordProcessor: r,
+		logger:          log.New(os.Stderr, "", log.LstdFlags),
+
+		writer: bufio.NewWriter(output),
+		reader: bufio.NewReader(input),
+	}
+
+	for _, opt := range opts {
+		opt(kclProcess)
+	}
+
+	return kclProcess
 }
 
 // Writes a line to the output file. The line is preceeded and followed by a new
@@ -79,26 +87,51 @@ type checkpointMessage struct {
 // prevent our lines from being interlaced with other messages so the
 // MultiLangDaemon can understand them.  (e.g. '{"action" : "status",
 // "responseFor" : "<someAction>"}')
-func (k *kclProcess) writeStatus(action string) {
-	rawStatus, err := json.Marshal(statusMessage{
+// Similar to https://github.com/awslabs/amazon-kinesis-client-python/blob/master/amazon_kclpy/kcl.py#L31
+func (k *kclProcess) writeLine(bytes []byte) error {
+	err := k.writer.WriteByte('\n')
+	if err != nil {
+		return errors.Wrap(err, "failed to write line")
+	}
+
+	_, err = k.writer.Write(bytes)
+	if err != nil {
+		return errors.Wrap(err, "failed to write line")
+	}
+
+	err = k.writer.WriteByte('\n')
+	if err != nil {
+		return errors.Wrap(err, "failed to write line")
+	}
+
+	if err := k.writer.Flush(); err != nil {
+		return errors.Wrap(err, "failed to flush line")
+	}
+	return nil
+}
+
+func (k *kclProcess) writeStatus(action string) error {
+	status, err := json.Marshal(statusMessage{
 		Action:      "status",
 		ResponseFor: action,
 	})
 	if err != nil {
-		panic(err)
+		return errors.Wrap(err, "failed ot marshal status message")
 	}
 
-	rawStatusFormatted := fmt.Sprintf("\n%s\n", string(rawStatus))
-	k.logger.Printf("Writing status %s", rawStatusFormatted)
+	k.logger.Printf("Writing status %s", status)
+	err = k.writeLine([]byte(status))
+	if err != nil {
+		return err
+	}
 
-	fmt.Printf(rawStatusFormatted)
+	return nil
 }
 
-func readMessage() (*message, error) {
-	reader := bufio.NewReader(os.Stdin)
-	bytes, err := reader.ReadBytes('\n')
+func (k *kclProcess) readMessage() (*message, error) {
+	bytes, err := k.readLine()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read bytes")
+		return nil, err
 	}
 
 	var msg message
@@ -110,16 +143,20 @@ func readMessage() (*message, error) {
 	return &msg, nil
 }
 
+func (k *kclProcess) readLine() ([]byte, error) {
+	bytes, err := k.reader.ReadBytes('\n')
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read bytes")
+	}
+	return bytes, nil
+}
+
 func (k *kclProcess) Run() error {
 	shouldExit := false
 	for {
-		msg, err := readMessage()
+		msg, err := k.readMessage()
 		if err != nil {
-			if err == io.EOF {
-				panic("Unexpected end of file. Exiting!")
-			} else {
-				return errors.New("failed to read message")
-			}
+			return err
 		}
 
 		switch msg.Action {
@@ -165,35 +202,31 @@ func (k *kclProcess) Run() error {
 
 func (k *kclProcess) checkpoint(sequenceNumber *string) error {
 	// Write checkpoint and immediately check for acknowledgement
-	var rawCheckpoint []byte
+	var checkpoint []byte
 	var err error
 
-	if sequenceNumber == nil {
-		rawCheckpoint = []byte(
-			fmt.Sprintf("{\"action\": \"checkpoint\", \"sequenceNumber\": null}"),
-		)
-	} else {
-		rawCheckpoint, err = json.Marshal(checkpointMessage{
-			Action:         "checkpoint",
-			SequenceNumber: *sequenceNumber,
-		})
+	checkpoint = []byte(`{"action": "checkpoint", "sequenceNumber": null}`)
+	if sequenceNumber != nil {
+		checkpoint, err = json.Marshal(
+			checkpointMessage{
+				Action:         "checkpoint",
+				SequenceNumber: *sequenceNumber,
+			})
 		if err != nil {
-			return err
+			return errors.Wrap(err, "failed to marshal checkpoint")
 		}
 	}
 
-	rawCheckpointFormatted := fmt.Sprintf("\n%s\n", string(rawCheckpoint))
+	k.logger.Printf("Writing checkpoint %s", checkpoint)
+	k.writeLine(checkpoint)
 
-	k.logger.Printf("Writing checkpoint %s", rawCheckpointFormatted)
-	fmt.Printf(rawCheckpointFormatted)
-
-	checkpointMsgOutput, err := readMessage()
+	checkpointMsgOutput, err := k.readMessage()
 	if err != nil {
 		return errors.Wrap(err, "failed to read message for checkpoint")
 	}
 
 	if checkpointMsgOutput.Error != "" {
-		return errors.New(fmt.Sprintf("Error %s when checkpointing", checkpointMsgOutput.Error))
+		return errors.Errorf("Error %s when checkpointing", checkpointMsgOutput.Error)
 	}
 
 	switch checkpointMsgOutput.Action {
