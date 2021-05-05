@@ -1,4 +1,4 @@
-package main
+package integration_tests
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 	"github.com/goguardian/goguardian-go-kcl/kcl"
 )
 
-const receiverPort = ":8080"
+const ReceiverPort = ":8080"
 
 type messageReceiver struct {
 	processRecordsChan chan *kcl.ProcessRecordsInput
@@ -44,5 +44,5 @@ func (m *messageReceiver) startHTTPServer() {
 		w.Write([]byte("message received"))
 	})
 
-	log.Fatal(http.ListenAndServe(receiverPort, nil))
+	log.Fatal(http.ListenAndServe(ReceiverPort, nil))
 }

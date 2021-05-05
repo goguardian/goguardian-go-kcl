@@ -1,4 +1,4 @@
-package main
+package integration_tests
 
 import (
 	"fmt"
@@ -26,32 +26,32 @@ func TestRecordsReceived(t *testing.T) {
 	testStreamName := "stream_" + uuid.Must(uuid.NewV4()).String()
 	testAppName := "app_" + uuid.Must(uuid.NewV4()).String()
 
-	t.Log("Getting local kinesis client")
+	fmt.Println("Getting local kinesis client")
 	tClient, err := GetLocalKinesisClient()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	t.Log("deleting kinesis stream if present")
+	fmt.Println("deleting kinesis stream if present")
 	err = tClient.DeleteStream(testStreamName, defaultTimeout)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	t.Log("creating new kinesis stream")
+	fmt.Println("creating new kinesis stream")
 	err = tClient.CreateStream(testStreamName, 4, defaultTimeout)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	t.Log("putting records in kinesis stream")
+	fmt.Println("putting records in kinesis stream")
 	err = tClient.PutRecords(testStreamName, []string{"alice", "bob", "charlie"})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Create properties file for this test consumer
-	tmpl, err := template.ParseFiles("test_app_properties.tmpl")
+	tmpl, err := template.ParseFiles("test-app/test_app_properties.tmpl")
 	if err != nil {
 		t.Fatal("failed to parse properties template file")
 	}
@@ -91,7 +91,6 @@ func TestRecordsReceived(t *testing.T) {
 		for {
 			req := <-receiver.processRecordsChan
 			for _, record := range req.Records {
-				fmt.Println(record.Data)
 				receivedRecords[string(record.Data)] = true
 			}
 

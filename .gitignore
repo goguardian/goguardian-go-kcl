@@ -23,7 +23,7 @@ jar/
 # Go binaries
 runner/cmd/runner
 sample/sample
-integration_tests/test_app
+integration-tests/test-app/test_app
 
 # Log files
 *log*

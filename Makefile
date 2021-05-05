@@ -11,7 +11,7 @@ build_runner:
 	go build -o ./runner/cmd/runner ./runner/cmd
 
 build_integration_processor:
-	go build -o ./integration_tests/test_app ./integration_tests
+	go build -o ./integration-tests/test-app/test_app ./integration-tests/test-app
 
 build: build_runner build_sample_app build_integration_processor
 
@@ -32,4 +32,4 @@ stop_localstack:
 	docker-compose stop
 
 run_integ_test: build start_localstack
-	go test -count=1 -v ./integration_tests
+	go test -count=1 -v ./integration-tests

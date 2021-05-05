@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	integ "github.com/goguardian/goguardian-go-kcl/integration-tests"
 	"github.com/goguardian/goguardian-go-kcl/kcl"
 )
 
@@ -18,7 +19,7 @@ func (s *testProcessor) ProcessRecords(input *kcl.ProcessRecordsInput) {
 	if err != nil {
 		panic(err)
 	}
-	resp, err := http.Post("http://localhost"+receiverPort+"/process_records", "application/json", bytes.NewReader(body))
+	resp, err := http.Post("http://localhost"+integ.ReceiverPort+"/process_records", "application/json", bytes.NewReader(body))
 	if err != nil {
 		panic(err)
 	}
