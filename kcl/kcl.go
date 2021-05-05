@@ -9,10 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	output = os.Stdout
-	input  = os.Stdin
-)
+var defaultLogger = log.New(os.Stderr, "", log.LstdFlags)
 
 type KCLProcess interface {
 	Run() error
@@ -68,10 +65,10 @@ func WithLogger(logger *log.Logger) Option {
 func GetKCLProcess(r RecordProcessor, opts ...Option) KCLProcess {
 	kclProcess := &kclProcess{
 		recordProcessor: r,
-		logger:          log.New(os.Stderr, "", log.LstdFlags),
+		logger:          defaultLogger,
 
-		writer: bufio.NewWriter(output),
-		reader: bufio.NewReader(input),
+		writer: bufio.NewWriter(os.Stdout),
+		reader: bufio.NewReader(os.Stdin),
 	}
 
 	for _, opt := range opts {
@@ -116,7 +113,7 @@ func (k *kclProcess) writeStatus(action string) error {
 		ResponseFor: action,
 	})
 	if err != nil {
-		return errors.Wrap(err, "failed ot marshal status message")
+		return errors.Wrap(err, "failed to marshal status message")
 	}
 
 	k.logger.Printf("Writing status %s", status)
@@ -234,7 +231,7 @@ func (k *kclProcess) checkpoint(sequenceNumber *string) error {
 		// successful checkpoint
 	default:
 		// unsuccessful checkpoint
-		return errors.New("Unknown message. Expecting checkpoint message")
+		return errors.Errorf("Unknown message '%s'. Expecting checkpoint message", checkpointMsgOutput.Action)
 	}
 	return nil
 }
