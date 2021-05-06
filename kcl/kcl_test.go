@@ -3,15 +3,16 @@ package kcl
 import (
 	"bufio"
 	"bytes"
-	"fmt"
-	"reflect"
 	"strings"
 	"testing"
 )
 
 type mockProcessor struct {
-	initializeCall     *InitializationInput
-	processRecordsCall *ProcessRecordsInput
+	initializeCall        *InitializationInput
+	processRecordsCall    *ProcessRecordsInput
+	leaseLostCall         *LeaseLostInput
+	shardEndedCall        *ShardEndedInput
+	shutdownRequestedCall *ShutdownRequestedInput
 }
 
 func (m *mockProcessor) Initialize(input *InitializationInput) {
@@ -21,30 +22,13 @@ func (m *mockProcessor) ProcessRecords(input *ProcessRecordsInput) {
 	m.processRecordsCall = input
 }
 func (m *mockProcessor) LeaseLost(input *LeaseLostInput) {
+	m.leaseLostCall = input
 }
 func (m *mockProcessor) ShardEnded(input *ShardEndedInput) {
+	m.shardEndedCall = input
 }
 func (m *mockProcessor) ShutdownRequested(input *ShutdownRequestedInput) {
-}
-
-func TestWriteStatus(t *testing.T) {
-	bytesBuffer := &bytes.Buffer{}
-	k := &kclProcess{
-		logger: defaultLogger,
-		writer: bufio.NewWriter(bytesBuffer),
-	}
-
-	err := k.writeStatus("someAction")
-	if err != nil {
-		t.Error(err)
-	}
-
-	expected := "\n" + `{"action":"status","responseFor":"someAction"}` + "\n"
-	actual := bytesBuffer.String()
-
-	if expected != actual {
-		t.Errorf("expected '%s' but got '%s'", expected, actual)
-	}
+	m.shutdownRequestedCall = input
 }
 
 func TestRun_Initialize(t *testing.T) {
@@ -143,50 +127,162 @@ func TestRun_ProcessRecords(t *testing.T) {
 	}
 }
 
-func TestReadMessage(t *testing.T) {
-	testCases := []struct {
-		inputLine       string
-		expectedMessage *message
-		expectErr       bool
-	}{
-		{
-			inputLine:       `{"action": "initialize", "shardId": "someShardID"}` + "\n",
-			expectedMessage: &message{Action: "initialize", ShardID: "someShardID"},
-			expectErr:       false,
-		},
-		{
-			inputLine: `{"action": "processRecords", "records": ` +
-				`[{"data": "dGVzdERhdGE=", "partitionKey": "somePartitionKey", "sequenceNumber": "someSequenceNumber"}]}` + "\n",
-			expectedMessage: &message{Action: "processRecords", Records: []Record{
-				{
-					Data:           []byte("testData"),
-					PartitionKey:   "somePartitionKey",
-					SequenceNumber: "someSequenceNumber",
-				},
-			}},
-			expectErr: false,
-		},
+func TestRun_LeaseLost(t *testing.T) {
+	mProcessor := &mockProcessor{}
+	outputBuffer := &bytes.Buffer{}
+	inputLines := `{"action": "leaseLost"}` + "\n" + `{"action": "shutdownRequested"}` + "\n"
+
+	k := &kclProcess{
+		recordProcessor: mProcessor,
+		logger:          defaultLogger,
+		reader:          bufio.NewReader(strings.NewReader(inputLines)),
+		writer:          bufio.NewWriter(outputBuffer),
 	}
 
-	for _, testCase := range testCases {
-		t.Run(fmt.Sprintf("line %s", testCase.inputLine), func(t *testing.T) {
-			k := &kclProcess{
-				logger: defaultLogger,
-				reader: bufio.NewReader(strings.NewReader(testCase.inputLine)),
-			}
+	finishedRun := make(chan bool)
+	var err error
+	go func() {
+		err = k.Run()
+		finishedRun <- true
+	}()
 
-			actualMessage, err := k.readMessage()
-			if err != nil && !testCase.expectErr {
-				t.Errorf("readMessage returned an error '%+v'", err)
-			}
-			if err == nil && testCase.expectErr {
-				t.Error("expected readMessage to return an error, but it didn't")
-			}
-
-			if !reflect.DeepEqual(testCase.expectedMessage, actualMessage) {
-				t.Errorf("expected '%+v', but got '%+v'", testCase.expectedMessage, actualMessage)
-			}
-		})
+	<-finishedRun
+	if err != nil {
+		t.Errorf("unexpected error: %+v", err)
 	}
 
+	expectedOutput := `
+{"action":"status","responseFor":"leaseLost"}
+
+{"action":"status","responseFor":"shutdownRequested"}
+`
+
+	output := outputBuffer.String()
+	if expectedOutput != output {
+		t.Errorf("expected the kclProcess to write '%s', but instead it wrote '%s'", expectedOutput, output)
+	}
+
+	if mProcessor.leaseLostCall == nil {
+		t.Errorf("expected leaseLost to have been called, but it was not")
+	}
 }
+
+func TestRun_ShardEnded(t *testing.T) {
+	mProcessor := &mockProcessor{}
+	outputBuffer := &bytes.Buffer{}
+	inputLines := `{"action": "shardEnded"}` + "\n"
+
+	k := &kclProcess{
+		recordProcessor: mProcessor,
+		logger:          defaultLogger,
+		reader:          bufio.NewReader(strings.NewReader(inputLines)),
+		writer:          bufio.NewWriter(outputBuffer),
+	}
+
+	finishedRun := make(chan bool)
+	var err error
+	go func() {
+		err = k.Run()
+		finishedRun <- true
+	}()
+
+	<-finishedRun
+	if err != nil {
+		t.Errorf("unexpected error: %+v", err)
+	}
+
+	expectedOutput := `
+{"action":"status","responseFor":"shardEnded"}
+`
+
+	output := outputBuffer.String()
+	if expectedOutput != output {
+		t.Errorf("expected the kclProcess to write '%s', but instead it wrote '%s'", expectedOutput, output)
+	}
+
+	if mProcessor.shardEndedCall == nil {
+		t.Errorf("expected shardEnded to have been called, but it was not")
+	}
+}
+
+func TestRun_ShutdownRequested(t *testing.T) {
+	mProcessor := &mockProcessor{}
+	outputBuffer := &bytes.Buffer{}
+	inputLines := `{"action": "shutdownRequested"}` + "\n"
+
+	k := &kclProcess{
+		recordProcessor: mProcessor,
+		logger:          defaultLogger,
+		reader:          bufio.NewReader(strings.NewReader(inputLines)),
+		writer:          bufio.NewWriter(outputBuffer),
+	}
+
+	finishedRun := make(chan bool)
+	var err error
+	go func() {
+		err = k.Run()
+		finishedRun <- true
+	}()
+
+	<-finishedRun
+	if err != nil {
+		t.Errorf("unexpected error: %+v", err)
+	}
+
+	expectedOutput := `
+{"action":"status","responseFor":"shutdownRequested"}
+`
+
+	output := outputBuffer.String()
+	if expectedOutput != output {
+		t.Errorf("expected the kclProcess to write '%s', but instead it wrote '%s'", expectedOutput, output)
+	}
+
+	if mProcessor.shutdownRequestedCall == nil {
+		t.Errorf("expected shutdownRequested to have been called, but it was not")
+	}
+}
+
+func TestRun_UnknownAction(t *testing.T) {
+	mProcessor := &mockProcessor{}
+	outputBuffer := &bytes.Buffer{}
+	inputLines := `{"action": "unknownAction"}` + "\n"
+
+	k := &kclProcess{
+		recordProcessor: mProcessor,
+		logger:          defaultLogger,
+		reader:          bufio.NewReader(strings.NewReader(inputLines)),
+		writer:          bufio.NewWriter(outputBuffer),
+	}
+
+	finishedRun := make(chan bool)
+	var err error
+	go func() {
+		err = k.Run()
+		finishedRun <- true
+	}()
+
+	<-finishedRun
+	if err == nil {
+		t.Error("expected a non nil error when action is unknown")
+	}
+}
+
+//func TestCheckpoint(t *testing.T) {
+//	testCases := struct {
+//		sequenceNumber *string
+//		shouldErr      bool
+//		reader         *bufio.Reader
+//	}{}
+//
+//	mProcessor := &mockProcessor{}
+//	outputBuffer := &bytes.Buffer{}
+//	inputLines := `{"action": "unknownAction"}` + "\n"
+//
+//	k := &kclProcess{
+//		recordProcessor: mProcessor,
+//		logger:          defaultLogger,
+//		reader:          bufio.NewReader(strings.NewReader(inputLines)),
+//		writer:          bufio.NewWriter(outputBuffer),
+//	}
+//}
