@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path"
 	"strings"
 	"time"
 
-	"github.com/cenkalti/backoff"
-	getter "github.com/hashicorp/go-getter"
+	"github.com/pkg/errors"
 )
 
 // Credit to https://github.com/arthurbailao/aws-kcl/blob/master/cmd/aws-kcl/download.go
@@ -21,39 +22,81 @@ func main() {
 	if len(os.Args) > 1 {
 		dstFolder = os.Args[1]
 	}
-	download(dstFolder)
+
+	err := download(dstFolder)
+	if err != nil {
+		fmt.Printf("failed to download due to error: %+v\n", err)
+	}
+
 	fmt.Println("Completed download")
 }
 
-// Download ...
-func download(dstPath string) []string {
-	filenames := make([]string, len(packages))
-	for i, pkg := range packages {
+// Download fetches each jar package from Maven and saves it in the specified
+// dstPath.
+func download(dstPath string) error {
+	if _, err := os.Stat(dstPath); os.IsNotExist(err) {
+		err := os.Mkdir(dstPath, 0755)
+		if err != nil {
+			return errors.Wrap(err, "failed to make jar directory")
+		}
+	}
+
+	for _, pkg := range packages {
 		filename := path.Join(dstPath, pkg.Name())
 
-		if _, err := os.Stat(filename); os.IsNotExist(err) {
-			downloadFile(filename, pkg.URL())
+		if err := downloadFileWithRetry(pkg.URL(), filename); err != nil {
+			return err
 		}
-
-		filenames[i] = filename
 	}
-	return filenames
+	return nil
 }
 
-func downloadFile(dst string, src string) {
-	b := backoff.NewExponentialBackOff()
-	b.InitialInterval = 200 * time.Millisecond
-	b.MaxElapsedTime = 1 * time.Minute
+func downloadFileWithRetry(src string, dst string) error {
+	// don't download if dst already xists
+	if _, err := os.Stat(dst); err == nil {
+		return nil
+	}
 
-	err := backoff.Retry(func() error {
+	retryTimes := 3
+	backoff := 500 * time.Millisecond
+	var err error
+
+	for i := 0; i < retryTimes; i++ {
 		fmt.Printf("Downloading %s to %s\n", src, dst)
-		er := getter.GetFile(dst, src)
-		return er
-	}, b)
+		err = downloadFile(src, dst)
+		if err == nil {
+			break
+		}
+
+		time.Sleep(backoff)
+		backoff *= 2
+	}
 
 	if err != nil {
-		panic(fmt.Sprintf("failed to download jar files due to error %s", err.Error()))
+		return err
 	}
+
+	return nil
+}
+
+func downloadFile(src string, dst string) error {
+	resp, err := http.Get(src)
+	if err != nil {
+		return errors.Wrap(err, "failed to download file")
+	}
+	defer resp.Body.Close()
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create destination file: %s", dst)
+	}
+
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return errors.Wrap(err, "failed to write data to file")
+	}
+
+	return nil
 }
 
 type mavenPackageInfo struct {
