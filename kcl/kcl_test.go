@@ -268,21 +268,56 @@ func TestRun_UnknownAction(t *testing.T) {
 	}
 }
 
-//func TestCheckpoint(t *testing.T) {
-//	testCases := struct {
-//		sequenceNumber *string
-//		shouldErr      bool
-//		reader         *bufio.Reader
-//	}{}
-//
-//	mProcessor := &mockProcessor{}
-//	outputBuffer := &bytes.Buffer{}
-//	inputLines := `{"action": "unknownAction"}` + "\n"
-//
-//	k := &kclProcess{
-//		recordProcessor: mProcessor,
-//		logger:          defaultLogger,
-//		reader:          bufio.NewReader(strings.NewReader(inputLines)),
-//		writer:          bufio.NewWriter(outputBuffer),
-//	}
-//}
+func TestCheckpoint(t *testing.T) {
+	someSequenceNumber := "123"
+	testCases := []struct {
+		sequenceNumber *string
+		shouldErr      bool
+		inputLines     string
+		expectedOutput string
+	}{
+		{
+			sequenceNumber: nil,
+			inputLines:     `{"action": "checkpoint"}` + "\n",
+			expectedOutput: "\n" + `{"action":"checkpoint","sequenceNumber":null}` + "\n",
+		},
+		{
+			sequenceNumber: &someSequenceNumber,
+			inputLines:     `{"action": "checkpoint"}` + "\n",
+			expectedOutput: "\n" + `{"action":"checkpoint","sequenceNumber":"123"}` + "\n",
+		},
+		{
+			sequenceNumber: &someSequenceNumber,
+			inputLines:     `{"action": "checkpoint", "error": "someError"}` + "\n",
+			expectedOutput: "\n" + `{"action":"checkpoint","sequenceNumber":"123"}` + "\n",
+			shouldErr:      true,
+		},
+	}
+
+	for _, testCase := range testCases {
+		mProcessor := &mockProcessor{}
+		outputBuffer := &bytes.Buffer{}
+
+		k := &kclProcess{
+			recordProcessor: mProcessor,
+			logger:          defaultLogger,
+			reader:          bufio.NewReader(strings.NewReader(testCase.inputLines)),
+			writer:          bufio.NewWriter(outputBuffer),
+		}
+
+		err := k.checkpoint(testCase.sequenceNumber)
+
+		if testCase.shouldErr && err == nil {
+			t.Error("expected an error but did not get one")
+		}
+
+		if !testCase.shouldErr && err != nil {
+			t.Errorf("unexpected error: %+v", err)
+		}
+
+		actualOutput := outputBuffer.String()
+		if testCase.expectedOutput != actualOutput {
+			t.Errorf("expected output '%s' but was '%s'", testCase.expectedOutput, actualOutput)
+		}
+	}
+}

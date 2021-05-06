@@ -202,7 +202,7 @@ func (k *kclProcess) checkpoint(sequenceNumber *string) error {
 	var checkpoint []byte
 	var err error
 
-	checkpoint = []byte(`{"action": "checkpoint", "sequenceNumber": null}`)
+	checkpoint = []byte(`{"action":"checkpoint","sequenceNumber":null}`)
 	if sequenceNumber != nil {
 		checkpoint, err = json.Marshal(
 			checkpointMessage{
@@ -223,7 +223,7 @@ func (k *kclProcess) checkpoint(sequenceNumber *string) error {
 	}
 
 	if checkpointMsgOutput.Error != "" {
-		return errors.Errorf("Error %s when checkpointing", checkpointMsgOutput.Error)
+		return errors.Errorf("Error when checkpointing: %s", checkpointMsgOutput.Error)
 	}
 
 	switch checkpointMsgOutput.Action {
