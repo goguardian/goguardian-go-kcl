@@ -39,8 +39,8 @@ type statusMessage struct {
 
 // checkpointMessage represents a checkpoint
 type checkpointMessage struct {
-	Action         string `json:"action"`
-	SequenceNumber string `json:"sequenceNumber"`
+	Action         string  `json:"action"`
+	SequenceNumber *string `json:"sequenceNumber"`
 }
 
 type kclProcess struct {
@@ -202,16 +202,13 @@ func (k *kclProcess) checkpoint(sequenceNumber *string) error {
 	var checkpoint []byte
 	var err error
 
-	checkpoint = []byte(`{"action":"checkpoint","sequenceNumber":null}`)
-	if sequenceNumber != nil {
-		checkpoint, err = json.Marshal(
-			checkpointMessage{
-				Action:         "checkpoint",
-				SequenceNumber: *sequenceNumber,
-			})
-		if err != nil {
-			return errors.Wrap(err, "failed to marshal checkpoint")
-		}
+	checkpoint, err = json.Marshal(
+		&checkpointMessage{
+			Action:         "checkpoint",
+			SequenceNumber: sequenceNumber,
+		})
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal checkpoint")
 	}
 
 	k.logger.Printf("Writing checkpoint %s", checkpoint)

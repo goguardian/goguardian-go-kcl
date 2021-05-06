@@ -3,6 +3,8 @@ package kcl
 import (
 	"bufio"
 	"bytes"
+	"log"
+	"os"
 	"strings"
 	"testing"
 )
@@ -319,5 +321,35 @@ func TestCheckpoint(t *testing.T) {
 		if testCase.expectedOutput != actualOutput {
 			t.Errorf("expected output '%s' but was '%s'", testCase.expectedOutput, actualOutput)
 		}
+	}
+}
+
+func TestGetKCLProcess_WithNoOptions(t *testing.T) {
+	mProcessor := &mockProcessor{}
+	processInterface := GetKCLProcess(mProcessor)
+	process, ok := processInterface.(*kclProcess)
+
+	if !ok {
+		t.Fatal("GetKCLProcess did not return a *kclProcess")
+	}
+	if process.recordProcessor != mProcessor {
+		t.Error("GetKCLProcess did not set recordProcessor correctly")
+	}
+	if process.logger != defaultLogger {
+		t.Error("GetKCLProcess did not set default logger correctly")
+	}
+}
+
+func TestGetKCLProcess_WithOptions(t *testing.T) {
+	mProcessor := &mockProcessor{}
+	anyCustomLogger := log.New(os.Stderr, "", log.LUTC)
+	processInterface := GetKCLProcess(mProcessor, WithLogger(anyCustomLogger))
+	process, ok := processInterface.(*kclProcess)
+
+	if !ok {
+		t.Fatal("GetKCLProcess did not return a *kclProcess")
+	}
+	if process.logger != anyCustomLogger {
+		t.Error("GetKCLProcess did not set default logger correctly")
 	}
 }
