@@ -1,0 +1,16 @@
+version: "3.7"
+
+services:
+  localstack:
+    image: localstack/localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - HOSTNAME=localstack
+      - HOSTNAME_EXTERNAL=localstack
+      - DEFAULT_REGION=us-east-1
+      - SERVICES=kinesis,dynamodb
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - /private/tmp/localstack:/tmp/localstack
+      - /var/run/docker.sock:/var/run/docker.sock

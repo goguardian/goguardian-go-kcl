@@ -14,6 +14,9 @@
 # vim tmp files
 *.swp
 
+# mac files
+*.DS_Store
+
 #JAR dependencies
 jar/
 
@@ -21,6 +24,7 @@ jar/
 jar-download/jar-download
 runner/cmd/runner
 sample/sample
+integration-tests/test-app/test_app
 
 # Log files
 *log*

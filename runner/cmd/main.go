@@ -43,7 +43,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	r.RunJavaDaemon()
+	go func() {
+		_, err := r.RunJavaDaemon()
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	select {}
 }
 
 // getVariable is used to fallback to environment variables if the flag was not

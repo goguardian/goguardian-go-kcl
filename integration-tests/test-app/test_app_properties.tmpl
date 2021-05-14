@@ -1,15 +1,15 @@
 # The script that abides by the multi-language protocol. This script will
 # be executed by the MultiLangDaemon, which will communicate with this script
 # over STDIN and STDOUT according to the multi-language protocol.
-executableName = sample/sample
+executableName = ../integration-tests/test-app/test_app
 
 # The name of an Amazon Kinesis stream to process.
-streamName = sample_kinesis_stream
+streamName = {{.StreamName}}
 
 # Used by the KCL as the name of this application. Will be used as the name
 # of an Amazon DynamoDB table which will store the lease and checkpoint
 # information for workers with this application name
-applicationName = sample_kinesis_application
+applicationName = {{.AppName}}
 
 # Users can change the credentials provider the KCL will use to retrieve credentials.
 # The DefaultAWSCredentialsProviderChain checks several other providers, which is
@@ -35,14 +35,14 @@ regionName = us-east-1
 # will be regarded as having problems and it's shards will be assigned to other workers.
 # For applications that have a large number of shards, this msy be set to a higher number to reduce
 # the number of DynamoDB IOPS required for tracking leases
-#failoverTimeMillis = 10000
+failoverTimeMillis = 3000
 
 # A worker id that uniquely identifies this worker among all workers using the same applicationName
 # If this isn't provided a MultiLangDaemon instance will assign a unique workerId to itself.
 #workerId =
 
 # Shard sync interval in milliseconds - e.g. wait for this long between shard sync tasks.
-#shardSyncIntervalMillis = 60000
+shardSyncIntervalMillis = 5000
 
 # Max records to fetch from Kinesis in a single GetRecords call.
 # maxRecords = 100400
@@ -80,3 +80,11 @@ regionName = us-east-1
 #maxActiveThreads = 0
 
 ShutdownGraceMillis = 10000
+
+# These settings are needed in order to work with localstack
+kinesisEndpoint = http://localhost:4566
+dynamoDBEndpoint = http://localhost:4566
+
+# localstack uses kinesalite which doesn't support HTTP2 enhanced fanout yet
+# https://github.com/mhart/kinesalite/issues/75
+retrievalMode=POLLING
