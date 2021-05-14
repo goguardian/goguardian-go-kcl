@@ -1,8 +1,9 @@
 JAR_DEPENDENCIES_FOLDER=./jar
 
-install_jars:
+download_jars:
 	rm -rf $(JAR_DEPENDENCIES_FOLDER) && \
-	go run jar-download/main.go $(JAR_DEPENDENCIES_FOLDER)
+	go build -o ./jar-download/jar-download ./jar-download && \
+	./jar-download/jar-download $(JAR_DEPENDENCIES_FOLDER)
 
 build_sample_app:
 	go build -o ./sample/sample ./sample
@@ -20,4 +21,4 @@ run_sample:
 
 build_and_run_sample: build run_sample
 
-download_build_and_run_sample: install_jars build_and_run_sample
+download_build_and_run_sample: download_jars build_and_run_sample
