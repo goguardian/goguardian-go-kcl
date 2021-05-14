@@ -3,6 +3,7 @@ package kcl
 import (
 	"bufio"
 	"bytes"
+	"encoding/base64"
 	"log"
 	"os"
 	"strings"
@@ -74,13 +75,19 @@ func TestRun_Initialize(t *testing.T) {
 	if mProcessor.initializeCall.shardID != "someShardID" {
 		t.Errorf("unexpected shardID from initialize call %s", mProcessor.initializeCall.shardID)
 	}
+
+	if mProcessor.shutdownRequestedCall == nil {
+		t.Errorf("expected shutdownRequested to have been called, but it was not")
+	}
 }
 
 func TestRun_ProcessRecords(t *testing.T) {
 	mProcessor := &mockProcessor{}
 	outputBuffer := &bytes.Buffer{}
+	data := "testData"
+	base64Data := base64.StdEncoding.EncodeToString([]byte(data))
 	inputLines := `{"action": "processRecords", "records": ` +
-		`[{"data": "dGVzdERhdGE=", "partitionKey": "somePartitionKey", "sequenceNumber": "someSequenceNumber"}]}` +
+		`[{"data": "` + base64Data + `", "partitionKey": "somePartitionKey", "sequenceNumber": "someSequenceNumber"}]}` +
 		"\n" +
 		`{"action": "shutdownRequested"}` +
 		"\n"
@@ -116,8 +123,8 @@ func TestRun_ProcessRecords(t *testing.T) {
 	}
 
 	processRecordsCall := mProcessor.processRecordsCall.Records[0]
-	if string(processRecordsCall.Data) != "testData" {
-		t.Errorf("expected 'testData', but got '%s'", string(processRecordsCall.Data))
+	if string(processRecordsCall.Data) != data {
+		t.Errorf("expected '%s', but got '%s'", data, string(processRecordsCall.Data))
 	}
 
 	if processRecordsCall.PartitionKey != "somePartitionKey" {
@@ -126,6 +133,10 @@ func TestRun_ProcessRecords(t *testing.T) {
 
 	if processRecordsCall.SequenceNumber != "someSequenceNumber" {
 		t.Errorf("expected 'someSequenceNumber', but got '%s'", processRecordsCall.SequenceNumber)
+	}
+
+	if mProcessor.shutdownRequestedCall == nil {
+		t.Errorf("expected shutdownRequested to have been called, but it was not")
 	}
 }
 
@@ -166,6 +177,10 @@ func TestRun_LeaseLost(t *testing.T) {
 
 	if mProcessor.leaseLostCall == nil {
 		t.Errorf("expected leaseLost to have been called, but it was not")
+	}
+
+	if mProcessor.shutdownRequestedCall == nil {
+		t.Errorf("expected shutdownRequested to have been called, but it was not")
 	}
 }
 

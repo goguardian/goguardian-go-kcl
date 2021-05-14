@@ -3,13 +3,14 @@ package kcl
 import (
 	"bufio"
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"os"
 
 	"github.com/pkg/errors"
 )
 
-var defaultLogger = log.New(os.Stderr, "", log.LstdFlags)
+var defaultLogger = log.New(ioutil.Discard, "", log.LstdFlags)
 
 type KCLProcess interface {
 	Run() error
