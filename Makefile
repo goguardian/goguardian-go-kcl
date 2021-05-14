@@ -1,13 +1,16 @@
 JAR_DEPENDENCIES_FOLDER=./jar
 
-install_jars:
-	go run jar-download/main.go $(JAR_DEPENDENCIES_FOLDER)
+install_jars: build_jar_download
+	jar-download/jar-download $(JAR_DEPENDENCIES_FOLDER)
 
 build_runner:
 	go build -o ./runner/cmd/runner ./runner/cmd
 
 build_sample_app:
 	go build -o ./sample/sample ./sample
+
+build_jar_download:
+	go build -o ./jar-download/jar-download ./jar-download
 
 build_integration_processor:
 	go build -o ./integration-tests/test-app/test_app ./integration-tests/test-app

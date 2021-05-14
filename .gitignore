@@ -21,6 +21,7 @@
 jar/
 
 # Go binaries
+jar-download/jar-download
 runner/cmd/runner
 sample/sample
 integration-tests/test-app/test_app
