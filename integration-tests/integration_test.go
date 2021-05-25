@@ -9,7 +9,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/gofrs/uuid"
 	"github.com/goguardian/goguardian-go-kcl/runner"
 )
 
@@ -23,8 +22,9 @@ type propertiesVar struct {
 }
 
 func TestRecordsReceived(t *testing.T) {
-	testStreamName := "stream_" + uuid.Must(uuid.NewV4()).String()
-	testAppName := "app_" + uuid.Must(uuid.NewV4()).String()
+	now := time.Now()
+	testStreamName := fmt.Sprintf("stream_%d", now.Unix())
+	testAppName := fmt.Sprintf("app_%d", now.Unix())
 
 	fmt.Println("Getting local kinesis client")
 	tClient, err := GetLocalKinesisClient()

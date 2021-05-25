@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
-	"github.com/gofrs/uuid"
 	"github.com/goguardian/goguardian-go-kcl/kcl"
 )
 
 func main() {
-	file, err := os.Create(fmt.Sprintf("sample-log-%s", uuid.Must(uuid.NewV4()).String()))
+	now := time.Now()
+	file, err := os.Create(fmt.Sprintf("sample-log-%d", now.Unix()))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -19,7 +20,7 @@ func main() {
 		logger: log.New(file, "", log.LstdFlags),
 	}
 
-	kclLogFile, err := os.Create(fmt.Sprintf("kcl-log-%s", uuid.Must(uuid.NewV4()).String()))
+	kclLogFile, err := os.Create(fmt.Sprintf("kcl-log-%d", now.Unix()))
 	if err != nil {
 		log.Fatal(err)
 	}
