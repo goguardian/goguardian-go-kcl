@@ -67,7 +67,7 @@ This command will do the following:
 
 ### Running integration tests
 Ensure you have [docker-compose][docker-compose-install]. We
-leverage localstack to emulate Kinesis locally. Also ensure you have the
+leverage [LocalStack][localstack] to emulate Kinesis locally. Also ensure you have the
 `$JAVA_HOME` environment variable set. For MacOS see this [guide](https://mkyong.com/java/how-to-set-java_home-environment-variable-on-mac-os-x/).
 
 ```bash
@@ -75,11 +75,12 @@ make run_integ_test
 ```
 
 ## Under the Hood - What You Should Know about Amazon KCL's [MultiLangDaemon][multi-lang-daemon]
-Amazon KCL for Go uses [Amazon KCL for Java][kinesis-github] internally. We have implemented
-a Java-based daemon, called the *MultiLangDaemon* that does all the heavy lifting. Our approach
-has the daemon spawn the user-defined record processor script/program as a sub-process. The
-*MultiLangDaemon* communicates with this sub-process over standard input/output using a simple
-protocol, and therefore the record processor script/program can be written in any language.
+Amazon KCL for Go uses [Amazon KCL for Java][kinesis-github] internally. AWS
+implemented a Java-based daemon, called the *MultiLangDaemon* that does all the
+heavy lifting. This approach has the daemon spawn the user-defined record
+processor script/program as a sub-process. The *MultiLangDaemon* communicates
+with this sub-process over standard input/output using a simple protocol, and
+therefore the record processor script/program can be written in any language.
 
 At runtime, there will always be a one-to-one correspondence between a record processor, a child process,
 and an [Amazon Kinesis Shard][amazon-kinesis-shard]. The *MultiLangDaemon* will make sure of
@@ -112,6 +113,7 @@ TBD
 [kinesis-forum]: http://developer.amazonwebservices.com/connect/forum.jspa?forumID=169
 [go-install]: https://golang.org/doc/install
 [docker-compose-install]: https://docs.docker.com/compose/install/
+[localstack]: https://github.com/localstack/localstack
 
 ## License
 TBD
