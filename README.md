@@ -38,8 +38,8 @@ func main() {
 
 ## Before You Get Started
 
-Install [Go](https://golang.org/doc/install) and make sure your go version
-matches the go version in the `go.mod` file.
+Install [Go][go-install] and make sure your go version matches the go version
+in the `go.mod` file.
 
 Before running the sample, you'll want to make sure that your environment is
 configured to allow the sample to use your [AWS Security
@@ -66,7 +66,7 @@ This command will do the following:
 4) Run the Java MultiLangDaemon which will spawn the sample processor.
 
 ### Running integration tests
-Ensure you have [docker-compose](https://docs.docker.com/compose/install/). We
+Ensure you have [docker-compose][docker-compose-install]. We
 leverage localstack to emulate Kinesis locally. Also ensure you have the
 `$JAVA_HOME` environment variable set. For MacOS see this [guide](https://mkyong.com/java/how-to-set-java_home-environment-variable-on-mac-os-x/).
 
@@ -103,13 +103,15 @@ TBD
 [amazon-kinesis-shard]: http://docs.aws.amazon.com/kinesis/latest/dev/key-concepts.html
 [amazon-kinesis-docs]: http://aws.amazon.com/documentation/kinesis/
 [amazon-kcl]: http://docs.aws.amazon.com/kinesis/latest/dev/kinesis-record-processor-app.html
-[multi-lang-daemon]: https://github.com/awslabs/amazon-kinesis-client/blob/master/src/main/java/com/amazonaws/services/kinesis/multilang/package-info.java
+[multi-lang-daemon]: https://github.com/awslabs/amazon-kinesis-client/blob/master/amazon-kinesis-client-multilang/src/main/java/software/amazon/kinesis/multilang/package-info.java
 [kinesis]: http://aws.amazon.com/kinesis
 [amazon-kinesis-ruby-github]: https://github.com/awslabs/amazon-kinesis-client-ruby
 [kinesis-github]: https://github.com/awslabs/amazon-kinesis-client
 [boto]: http://boto.readthedocs.org/en/latest/
 [DefaultCredentialsProvider]: https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/auth/credentials/DefaultCredentialsProvider.html
 [kinesis-forum]: http://developer.amazonwebservices.com/connect/forum.jspa?forumID=169
+[go-install]: https://golang.org/doc/install
+[docker-compose-install]: https://docs.docker.com/compose/install/
 
 ## License
 TBD
