@@ -80,7 +80,7 @@ var mavenPackages = []mavenPackageInfo{
 	{"software.amazon.awssdk", "profiles", "2.15.31"},
 	{"software.amazon.awssdk", "sdk-core", "2.15.31"},
 	{"com.fasterxml.jackson.core", "jackson-core", "2.10.4"},
-	{"com.fasterxml.jackson.core", "jackson-databind", "2.10.4"},
+	{"com.fasterxml.jackson.core", "jackson-databind", "2.10.5.1"},
 	{"software.amazon.awssdk", "auth", "2.15.31"},
 	{"software.amazon.eventstream", "eventstream", "1.0.1"},
 	{"software.amazon.awssdk", "http-client-spi", "2.15.31"},
