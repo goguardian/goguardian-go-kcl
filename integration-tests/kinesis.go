@@ -1,6 +1,7 @@
 package integration_tests
 
 import (
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -54,7 +55,7 @@ func (t *localKinesis) CreateStream(streamName string, shardCount int64, timeout
 
 		// Create it if it doesn't exist
 		if err != nil {
-			if e, ok := err.(awserr.Error); ok && e.Code() == "ResourceNotFoundException" {
+			if e, ok := err.(awserr.Error); ok && strings.Contains(e.Code(), "ResourceNotFoundException") {
 				t.kClient.CreateStream(
 					&kinesis.CreateStreamInput{
 						ShardCount: &shardCount,
@@ -88,7 +89,7 @@ func (t *localKinesis) DeleteStream(streamName string, timeout time.Duration) er
 	if err != nil {
 		switch e := err.(type) {
 		case awserr.Error:
-			if e.Code() == "ResourceNotFoundException" {
+			if strings.Contains(e.Code(), "ResourceNotFoundException") {
 				return nil // stream already deleted
 			}
 		}
