@@ -38,7 +38,7 @@ type statusMessage struct {
 	ResponseFor string `json:"responseFor"`
 }
 
-// checkpointMessage represents a checkpoint
+// checkpointMessage represents a checkpoint.
 type checkpointMessage struct {
 	Action         string  `json:"action"`
 	SequenceNumber *string `json:"sequenceNumber"`
@@ -56,7 +56,7 @@ type kclProcess struct {
 // Option signifies the type of options that can be passed to the kclProcess.
 type Option func(*kclProcess)
 
-// WithLogger can be used to specify a logger
+// WithLogger adds a logger option.
 func WithLogger(l *log.Logger) Option {
 	return func(k *kclProcess) {
 		k.logger = l
@@ -185,11 +185,11 @@ func (k *kclProcess) Run() error {
 			shouldExit = true
 
 		default:
-			return errors.New("Unknown message")
+			return errors.New("unknown message")
 		}
 
 		if err := k.writeStatus(msg.Action); err != nil {
-			// TODO: what do we do in this case?
+			return errors.Wrap(err, "error writing status")
 		}
 
 		if shouldExit {
@@ -219,7 +219,7 @@ func (k *kclProcess) checkpoint(sequenceNumber *string) error {
 	}
 
 	if checkpointMsgOutput.Error != "" {
-		return errors.Errorf("Error when checkpointing: %s", checkpointMsgOutput.Error)
+		return errors.Errorf("error when checkpointing: %s", checkpointMsgOutput.Error)
 	}
 
 	switch checkpointMsgOutput.Action {
@@ -227,7 +227,7 @@ func (k *kclProcess) checkpoint(sequenceNumber *string) error {
 		// successful checkpoint
 	default:
 		// unsuccessful checkpoint
-		return errors.Errorf("Unknown message '%s'. Expecting checkpoint message", checkpointMsgOutput.Action)
+		return errors.Errorf("unknown message '%s', expecting checkpoint message", checkpointMsgOutput.Action)
 	}
 
 	return nil
