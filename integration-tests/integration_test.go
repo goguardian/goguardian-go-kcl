@@ -12,9 +12,7 @@ import (
 	"github.com/goguardian/goguardian-go-kcl/runner"
 )
 
-const (
-	defaultTimeout = 30 * time.Second
-)
+const defaultTimeout = 30 * time.Second
 
 type propertiesVar struct {
 	StreamName string

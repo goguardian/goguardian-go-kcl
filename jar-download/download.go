@@ -18,7 +18,7 @@ type downloader struct {
 	httpClient *http.Client
 
 	mavenBaseURL string
-	packages     []mavenPackageInfo
+	packages     []mavenPackage
 }
 
 func getDownloader() *downloader {
@@ -36,7 +36,7 @@ func getDownloader() *downloader {
 // dstPath.
 func (d *downloader) download(dstPath string) error {
 	if _, err := os.Stat(dstPath); os.IsNotExist(err) {
-		err := os.Mkdir(dstPath, 0755)
+		err := os.Mkdir(dstPath, 0o755)
 		if err != nil {
 			return errors.Wrap(err, "failed to make jar directory")
 		}
@@ -52,11 +52,12 @@ func (d *downloader) download(dstPath string) error {
 	return nil
 }
 
-func (d *downloader) downloadFileWithRetry(src string, dst string) error {
-	// don't download if dst already xists
+func (d *downloader) downloadFileWithRetry(src, dst string) error {
+	// Don't download if dst already exists.
 	if _, err := os.Stat(dst); err == nil {
 		return nil
 	}
+
 	var err error
 	backoff := d.backoff
 
@@ -78,7 +79,7 @@ func (d *downloader) downloadFileWithRetry(src string, dst string) error {
 	return nil
 }
 
-func (d *downloader) downloadFile(src string, dst string) error {
+func (d *downloader) downloadFile(src, dst string) error {
 	resp, err := d.httpClient.Get(src)
 	if err != nil {
 		return errors.Wrap(err, "failed to download file")

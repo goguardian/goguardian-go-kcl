@@ -12,9 +12,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	localstackEndpoint = "http://localhost:4566"
-)
+const localstackEndpoint = "http://localhost:4566"
 
 type localKinesis struct {
 	kClient *kinesis.Kinesis
@@ -52,7 +50,6 @@ func (t *localKinesis) CreateStream(streamName string, shardCount int64, timeout
 				StreamName: &streamName,
 			},
 		)
-
 		// Create it if it doesn't exist
 		if err != nil {
 			if e, ok := err.(awserr.Error); ok && strings.Contains(e.Code(), "ResourceNotFoundException") {
@@ -85,7 +82,6 @@ func (t *localKinesis) DeleteStream(streamName string, timeout time.Duration) er
 			StreamName: &streamName,
 		},
 	)
-
 	if err != nil {
 		switch e := err.(type) {
 		case awserr.Error:
@@ -136,6 +132,7 @@ func (t *localKinesis) PutRecords(streamName string, records []string) error {
 			PartitionKey: &record,
 		})
 	}
+
 	resp, err := t.kClient.PutRecords(
 		&kinesis.PutRecordsInput{
 			StreamName: &streamName,

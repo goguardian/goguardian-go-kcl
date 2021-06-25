@@ -20,21 +20,21 @@ func WithLogger(logger *log.Logger) Option {
 	}
 }
 
-func WithPathToJavaBinary(pathToJavaBinary string) Option {
+func WithPathToJavaBinary(p string) Option {
 	return func(runner *Runner) {
-		runner.pathToJavaBinary = pathToJavaBinary
+		runner.pathToJavaBinary = p
 	}
 }
 
-func WithPathToJarFolder(pathToJarFolder string) Option {
+func WithPathToJarFolder(p string) Option {
 	return func(runner *Runner) {
-		runner.pathToJarFolder = pathToJarFolder
+		runner.pathToJarFolder = p
 	}
 }
 
-func WithPathToPropertiesFile(pathToPropertiesFile string) Option {
+func WithPathToPropertiesFile(p string) Option {
 	return func(runner *Runner) {
-		runner.pathToPropertiesFile = pathToPropertiesFile
+		runner.pathToPropertiesFile = p
 	}
 }
 
@@ -47,27 +47,27 @@ type Runner struct {
 }
 
 func GetRunner(opts ...Option) (*Runner, error) {
-	runner := &Runner{
+	r := &Runner{
 		logger: log.New(os.Stdout, "", log.LstdFlags),
 	}
 
 	for _, opt := range opts {
-		opt(runner)
+		opt(r)
 	}
 
-	if runner.pathToJavaBinary == "" {
+	if r.pathToJavaBinary == "" {
 		return nil, errors.New("missing path to java binary")
 	}
 
-	if runner.pathToPropertiesFile == "" {
+	if r.pathToPropertiesFile == "" {
 		return nil, errors.New("missing path to properties folder")
 	}
 
-	if runner.pathToJarFolder == "" {
+	if r.pathToJarFolder == "" {
 		return nil, errors.New("missing path to jar folder")
 	}
 
-	return runner, nil
+	return r, nil
 }
 
 func getJarPaths(jarFolder string) ([]string, error) {
@@ -86,8 +86,10 @@ func getJarPaths(jarFolder string) ([]string, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get jar path")
 		}
+
 		jarPaths = append(jarPaths, jarPath)
 	}
+
 	return jarPaths, nil
 }
 
@@ -103,7 +105,7 @@ func (r *Runner) RunJavaDaemon(javaProperties ...string) (*exec.Cmd, error) {
 		return nil, errors.Wrap(err, "failed to get present working directeory")
 	}
 
-	//TODO: check to make sure the properties file exists in currentDir
+	// TODO: check to make sure the properties file exists in currentDir
 
 	paths := append(jarPaths, currentDir)
 	classpath := strings.Join(paths, string(os.PathListSeparator))

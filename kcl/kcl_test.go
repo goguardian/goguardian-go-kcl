@@ -18,20 +18,24 @@ type mockProcessor struct {
 	shutdownRequestedCall *ShutdownRequestedInput
 }
 
-func (m *mockProcessor) Initialize(input *InitializationInput) {
-	m.initializeCall = input
+func (p *mockProcessor) Initialize(input *InitializationInput) {
+	p.initializeCall = input
 }
-func (m *mockProcessor) ProcessRecords(input *ProcessRecordsInput) {
-	m.processRecordsCall = input
+
+func (p *mockProcessor) ProcessRecords(input *ProcessRecordsInput) {
+	p.processRecordsCall = input
 }
-func (m *mockProcessor) LeaseLost(input *LeaseLostInput) {
-	m.leaseLostCall = input
+
+func (p *mockProcessor) LeaseLost(input *LeaseLostInput) {
+	p.leaseLostCall = input
 }
-func (m *mockProcessor) ShardEnded(input *ShardEndedInput) {
-	m.shardEndedCall = input
+
+func (p *mockProcessor) ShardEnded(input *ShardEndedInput) {
+	p.shardEndedCall = input
 }
-func (m *mockProcessor) ShutdownRequested(input *ShutdownRequestedInput) {
-	m.shutdownRequestedCall = input
+
+func (p *mockProcessor) ShutdownRequested(input *ShutdownRequestedInput) {
+	p.shutdownRequestedCall = input
 }
 
 func TestRun_Initialize(t *testing.T) {
