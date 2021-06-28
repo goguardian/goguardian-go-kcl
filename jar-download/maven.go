@@ -5,19 +5,19 @@ import (
 	"strings"
 )
 
-type mavenPackageInfo struct {
+type mavenPackage struct {
 	Group    string
 	Artifact string
 	Version  string
 }
 
-func (pkg *mavenPackageInfo) URL(mavenBaseURL string) string {
+func (pkg *mavenPackage) URL(mavenBaseURL string) string {
 	paths := strings.Split(pkg.Group, ".")
 	paths = append(paths, pkg.Artifact, pkg.Version, pkg.Name())
 	return mavenBaseURL + strings.Join(paths, "/")
 }
 
-func (pkg *mavenPackageInfo) Name() string {
+func (pkg *mavenPackage) Name() string {
 	return fmt.Sprintf("%s-%s.jar", pkg.Artifact, pkg.Version)
 }
 
@@ -25,7 +25,7 @@ const mavenBaseHTTPURL = "https://search.maven.org/remotecontent?filepath="
 
 // To update the packages to newer versions follow instructions here:
 // https://github.com/awslabs/amazon-kinesis-client-python/blob/master/scripts/build_deps.py
-var mavenPackages = []mavenPackageInfo{
+var mavenPackages = []mavenPackage{
 	{"software.amazon.kinesis", "amazon-kinesis-client-multilang", "2.3.4"},
 	{"software.amazon.kinesis", "amazon-kinesis-client", "2.3.4"},
 	{"software.amazon.awssdk", "kinesis", "2.15.31"},

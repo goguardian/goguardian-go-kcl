@@ -32,13 +32,13 @@ type message struct {
 	Error      string   `json:"error"`
 }
 
-// statusMessage represents a status
+// statusMessage represents a status.
 type statusMessage struct {
 	Action      string `json:"action"`
 	ResponseFor string `json:"responseFor"`
 }
 
-// checkpointMessage represents a checkpoint
+// checkpointMessage represents a checkpoint.
 type checkpointMessage struct {
 	Action         string  `json:"action"`
 	SequenceNumber *string `json:"sequenceNumber"`
@@ -53,19 +53,19 @@ type kclProcess struct {
 	writer *bufio.Writer
 }
 
-// Option signifies the type of options that can be passed to the kclProcess
+// Option signifies the type of options that can be passed to the kclProcess.
 type Option func(*kclProcess)
 
-// WithLogger can be used to specify a logger
-func WithLogger(logger *log.Logger) Option {
+// WithLogger adds a logger option.
+func WithLogger(l *log.Logger) Option {
 	return func(k *kclProcess) {
-		k.logger = logger
+		k.logger = l
 	}
 }
 
-func GetKCLProcess(r RecordProcessor, opts ...Option) KCLProcess {
+func GetKCLProcess(p RecordProcessor, opts ...Option) KCLProcess {
 	kclProcess := &kclProcess{
-		recordProcessor: r,
+		recordProcessor: p,
 		logger:          defaultLogger,
 
 		writer: bufio.NewWriter(os.Stdout),
@@ -79,32 +79,30 @@ func GetKCLProcess(r RecordProcessor, opts ...Option) KCLProcess {
 	return kclProcess
 }
 
-// Writes a line to the output file. The line is preceeded and followed by a new
-// line because other libraries could be writing to the output file as well
-// (e.g. some libs might write debugging info to STDOUT) so we would like to
+// writeLine writes a line to the output file. The line is preceded and followed
+// by a new line because other libraries could be writing to the output file as
+// well (e.g. some libs might write debugging info to STDOUT). We would like to
 // prevent our lines from being interlaced with other messages so the
-// MultiLangDaemon can understand them.  (e.g. '{"action" : "status",
-// "responseFor" : "<someAction>"}')
+// MultiLangDaemon can understand them.
+// (e.g. '{"action" : "status", "responseFor" : "<someAction>"}')
 // Similar to https://github.com/awslabs/amazon-kinesis-client-python/blob/master/amazon_kclpy/kcl.py#L31
 func (k *kclProcess) writeLine(bytes []byte) error {
-	err := k.writer.WriteByte('\n')
-	if err != nil {
+	if err := k.writer.WriteByte('\n'); err != nil {
+		return errors.Wrap(err, "failed to write beginning newline char")
+	}
+
+	if _, err := k.writer.Write(bytes); err != nil {
 		return errors.Wrap(err, "failed to write line")
 	}
 
-	_, err = k.writer.Write(bytes)
-	if err != nil {
-		return errors.Wrap(err, "failed to write line")
-	}
-
-	err = k.writer.WriteByte('\n')
-	if err != nil {
-		return errors.Wrap(err, "failed to write line")
+	if err := k.writer.WriteByte('\n'); err != nil {
+		return errors.Wrap(err, "failed to write ending newline char")
 	}
 
 	if err := k.writer.Flush(); err != nil {
 		return errors.Wrap(err, "failed to flush line")
 	}
+
 	return nil
 }
 
@@ -118,8 +116,7 @@ func (k *kclProcess) writeStatus(action string) error {
 	}
 
 	k.logger.Printf("Writing status %s", status)
-	err = k.writeLine([]byte(status))
-	if err != nil {
+	if err = k.writeLine([]byte(status)); err != nil {
 		return err
 	}
 
@@ -135,7 +132,7 @@ func (k *kclProcess) readMessage() (*message, error) {
 	var msg message
 	err = json.Unmarshal(bytes, &msg)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshall message")
+		return nil, errors.Wrap(err, "failed to unmarshal message")
 	}
 
 	return &msg, nil
@@ -146,6 +143,7 @@ func (k *kclProcess) readLine() ([]byte, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read bytes")
 	}
+
 	return bytes, nil
 }
 
@@ -187,10 +185,12 @@ func (k *kclProcess) Run() error {
 			shouldExit = true
 
 		default:
-			return errors.New("Unknown message")
-
+			return errors.New("unknown message")
 		}
-		k.writeStatus(msg.Action)
+
+		if err := k.writeStatus(msg.Action); err != nil {
+			return errors.Wrap(err, "error writing status")
+		}
 
 		if shouldExit {
 			return nil
@@ -199,21 +199,19 @@ func (k *kclProcess) Run() error {
 }
 
 func (k *kclProcess) checkpoint(sequenceNumber *string) error {
-	// Write checkpoint and immediately check for acknowledgement
-	var checkpoint []byte
-	var err error
-
-	checkpoint, err = json.Marshal(
-		&checkpointMessage{
-			Action:         "checkpoint",
-			SequenceNumber: sequenceNumber,
-		})
+	// Write checkpoint and immediately check for acknowledgement.
+	checkpoint, err := json.Marshal(&checkpointMessage{
+		Action:         "checkpoint",
+		SequenceNumber: sequenceNumber,
+	})
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal checkpoint")
 	}
 
 	k.logger.Printf("Writing checkpoint %s", checkpoint)
-	k.writeLine(checkpoint)
+	if err = k.writeLine(checkpoint); err != nil {
+		return errors.Wrap(err, "failed to write checkpoint")
+	}
 
 	checkpointMsgOutput, err := k.readMessage()
 	if err != nil {
@@ -221,7 +219,7 @@ func (k *kclProcess) checkpoint(sequenceNumber *string) error {
 	}
 
 	if checkpointMsgOutput.Error != "" {
-		return errors.Errorf("Error when checkpointing: %s", checkpointMsgOutput.Error)
+		return errors.Errorf("error when checkpointing: %s", checkpointMsgOutput.Error)
 	}
 
 	switch checkpointMsgOutput.Action {
@@ -229,7 +227,8 @@ func (k *kclProcess) checkpoint(sequenceNumber *string) error {
 		// successful checkpoint
 	default:
 		// unsuccessful checkpoint
-		return errors.Errorf("Unknown message '%s'. Expecting checkpoint message", checkpointMsgOutput.Action)
+		return errors.Errorf("unknown message '%s', expecting checkpoint message", checkpointMsgOutput.Action)
 	}
+
 	return nil
 }

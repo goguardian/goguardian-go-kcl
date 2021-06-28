@@ -20,6 +20,7 @@ func (s *sampleProcessor) ProcessRecords(input *kcl.ProcessRecordsInput) {
 	for _, record := range input.Records {
 		s.latestSequenceNumber = record.SequenceNumber
 	}
+
 	err := input.Checkpoint(&s.latestSequenceNumber)
 	if err != nil {
 		s.logger.Printf("Got error %s", err.Error())
@@ -27,11 +28,12 @@ func (s *sampleProcessor) ProcessRecords(input *kcl.ProcessRecordsInput) {
 }
 
 func (s *sampleProcessor) LeaseLost(input *kcl.LeaseLostInput) {
-	s.printInput("LeastLost", input)
+	s.printInput("LeaseLost", input)
 }
 
 func (s *sampleProcessor) ShardEnded(input *kcl.ShardEndedInput) {
 	s.printInput("ShardEnded", input)
+
 	err := input.Checkpoint(&s.latestSequenceNumber)
 	if err != nil {
 		s.logger.Printf("Got error %s", err.Error())
@@ -40,6 +42,7 @@ func (s *sampleProcessor) ShardEnded(input *kcl.ShardEndedInput) {
 
 func (s *sampleProcessor) ShutdownRequested(input *kcl.ShutdownRequestedInput) {
 	s.printInput("ShutdownRequested", input)
+
 	err := input.Checkpoint(&input.SequenceNumber)
 	if err != nil {
 		s.logger.Printf("Got error %s", err.Error())
