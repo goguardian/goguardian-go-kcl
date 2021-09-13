@@ -159,7 +159,7 @@ func (k *kclProcess) Run() error {
 		case "initialize":
 			k.shardID = msg.ShardID
 			k.recordProcessor.Initialize(&InitializationInput{
-				shardID: k.shardID,
+				ShardID: k.shardID,
 			})
 
 		case "processRecords":

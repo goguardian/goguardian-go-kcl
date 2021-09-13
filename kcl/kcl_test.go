@@ -76,8 +76,8 @@ func TestRun_Initialize(t *testing.T) {
 		t.Errorf("expected the kclProcess to write '%s', but instead it wrote '%s'", expectedOutput, output)
 	}
 
-	if mProcessor.initializeCall.shardID != "someShardID" {
-		t.Errorf("unexpected shardID from initialize call %s", mProcessor.initializeCall.shardID)
+	if mProcessor.initializeCall.ShardID != "someShardID" {
+		t.Errorf("unexpected shardID from initialize call %s", mProcessor.initializeCall.ShardID)
 	}
 
 	if mProcessor.shutdownRequestedCall == nil {

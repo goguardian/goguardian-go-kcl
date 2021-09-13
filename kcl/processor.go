@@ -4,7 +4,7 @@ type CheckpointFunc = func(*string) error
 
 type (
 	InitializationInput struct {
-		shardID string
+		ShardID string
 	}
 	ProcessRecordsInput struct {
 		Records    []Record
