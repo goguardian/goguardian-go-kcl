@@ -17,7 +17,7 @@ func TestDownload(t *testing.T) {
 	defer server.Close()
 
 	d := getDownloader()
-	d.packages = []mavenPackageInfo{
+	d.packages = []mavenPackage{
 		{
 			Artifact: "some.artifact.path",
 			Group:    "some-package-group",
