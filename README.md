@@ -114,6 +114,7 @@ TBD
 [go-install]: https://golang.org/doc/install
 [docker-compose-install]: https://docs.docker.com/compose/install/
 [localstack]: https://github.com/localstack/localstack
+[license]: https://github.com/goguardian/goguardian-go-kcl/blob/main/LICENSE
 
 ## License
-TBD
+[License][license]
