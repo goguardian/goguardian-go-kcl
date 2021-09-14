@@ -20,6 +20,10 @@ type propertiesVar struct {
 }
 
 func TestRecordsReceived(t *testing.T) {
+	// uncomment this line to run integration tests
+	// TODO: make this cleaner
+	t.Skip("Skipping testing in CI environment")
+
 	now := time.Now()
 	testStreamName := fmt.Sprintf("stream_%d", now.Unix())
 	testAppName := fmt.Sprintf("app_%d", now.Unix())
