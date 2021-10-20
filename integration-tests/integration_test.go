@@ -3,6 +3,7 @@ package integration_tests
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"testing"
@@ -77,6 +78,7 @@ func TestRecordsReceived(t *testing.T) {
 		runner.WithPathToJarFolder("../jar"),
 		runner.WithPathToPropertiesFile(propertiesFile.Name()),
 		runner.WithPathToJavaBinary(javaHome+"/bin/java"),
+		runner.WithLogger(log.New(os.Stdout, "CUSTOM PREFIX:", 0)),
 	)
 	if err != nil {
 		t.Fatal("failed to get runner")

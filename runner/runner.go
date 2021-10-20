@@ -1,7 +1,8 @@
 package runner
 
 import (
-	"bytes"
+	"bufio"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -120,9 +121,15 @@ func (r *Runner) RunJavaDaemon(javaProperties ...string) (*exec.Cmd, error) {
 
 	cmd := exec.Command(r.pathToJavaBinary, args...)
 
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	cmd.Stdout = os.Stdout
+	err = pipeToLogger(r.logger, cmd.StdoutPipe)
+	if err != nil {
+		return nil, err
+	}
+
+	err = pipeToLogger(r.logger, cmd.StderrPipe)
+	if err != nil {
+		return nil, err
+	}
 
 	r.logger.Println("Starting java daemon process.")
 	if err = cmd.Start(); err != nil {
@@ -130,4 +137,20 @@ func (r *Runner) RunJavaDaemon(javaProperties ...string) (*exec.Cmd, error) {
 	}
 
 	return cmd, nil
+}
+
+func pipeToLogger(logger *log.Logger, getPipe func() (io.ReadCloser, error)) error {
+	pipe, err := getPipe()
+	if err != nil {
+		return errors.Wrap(err, "failed to get pipe")
+	}
+
+	go func(p io.ReadCloser) {
+		scanner := bufio.NewScanner(pipe)
+		for scanner.Scan() {
+			logLine := scanner.Text()
+			logger.Println(logLine)
+		}
+	}(pipe)
+	return nil
 }
