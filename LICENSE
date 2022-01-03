@@ -1,77 +1,24 @@
-                              Open Source License
+Copyright (c) 2021, Liminex, Inc. doing business as GoGuardian, All rights
+reserved.
 
-In connection with your use of, development or improvement of any products,
-technology or services, you may contribute to the open source software (“OSS”)
-project accessible at: https://github.com/goguardian/goguardian-go-kcl (the
-“Open Source Project”), subject to the terms and conditions set forth below by
-and between Liminex, Inc. doing business as GoGuardian (“GoGuardian”) and you
-(the “Agreement”).  This Agreement is effective as of the date of your first
-access to the Open Source Project. 
-
-As part of the Open Source Project, you will be entitled to use, modify,
-reproduce and distribute  the OSS, provided that:        
-
-  1. You include the following notice in the header file of any OSS that you
-  modify:   
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
   
-    a. Copyright (c) 2021, Liminex, Inc. doing business as GoGuardian, All
-    Rights Reserved.
+1. Redistributions of source code must retain the above copyright notice,
+   this list of conditions and the following disclaimer.
   
-    b. Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are met:
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
   
-      i. Redistributions of source code must retain the above copyright notice,
-      this list of conditions and the following disclaimer.
-  
-      ii. Redistributions in binary form must reproduce the above copyright
-      notice, this list of conditions and the following disclaimer in the
-      documentation and/or other materials provided with the distribution.
-  
-  2. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
-  IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-  POSSIBILITY OF SUCH DAMAGE.
-  
-  3. You acknowledge and agree that your modifications, developments or
-  improvements to the OSS (“Contributions”) are licensed for unlimited,
-  worldwide, non-exclusive, royalty-free use, reproduction, public display,
-  modification and distribution on the foregoing terms (without a right of
-  revocation) to GoGuardian, its affiliates, customers and suppliers and all
-  contributors to the Open Source Project.  You agree to provide a copy of your
-  Contributions to the Open Source Project repository listed above within
-  thirty (30) days after development thereof.
-
-  4. This Agreement and any dispute arising from or relating to this Agreement
-  are governed by the laws of the state of California, United States, without
-  regard to its conflict of law principles. The parties consent to exclusive
-  personal jurisdiction and venue in the courts located in Los Angeles County,
-  California.  This Agreement constitutes the entire agreement between you and
-  GoGuardian with respect to the subject matter hereof and supersedes all prior
-  agreements between you and GoGuardian and any other contractual obligations
-  GoGuardian or you may have to the other, whether written or oral, relating to
-  the same subject matter.  This Agreement may not be modified other than
-  through an update hereto that GoGuardian prominently displays on the site
-  where you accessed the Open Source Project or by mutual written agreement of
-  the parties.  If any provision of this Agreement is invalid or unenforceable,
-  such provision will be changed and interpreted to accomplish the objectives
-  of such provision to the greatest extent possible under applicable law and
-  the remaining provisions will continue in full force and effect.
-  Communications between you and GoGuardian may take place via electronic
-  means. For contractual purposes, you (a) consent to receive communications
-  from GoGuardian in an electronic form; and (b) agree that all terms and
-  conditions, agreements, notices, disclosures, and other communications that
-  GoGuardian provides to you electronically satisfy any legal requirement that
-  such communications would satisfy if it were to be in writing. The foregoing
-  does not affect your statutory rights.  You may contact GoGuardian regarding
-  the Open Source Project or this Agreement at: eng@goguardian.com.  Any waiver
-  or failure to enforce any provision of this Agreement on one occasion will
-  not be deemed a waiver of any other provision or of such provision on any
-  other occasion.  GoGuardian reserves all rights not expressly granted to you
-  under this Agreement.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
