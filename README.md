@@ -99,7 +99,7 @@ all languages.
 * The [Amazon Kinesis Forum][kinesis-forum]
 
 ## Release Notes
-TBD
+Upgraded go version in go.mod
 
 [amazon-kinesis-shard]: http://docs.aws.amazon.com/kinesis/latest/dev/key-concepts.html
 [amazon-kinesis-docs]: http://aws.amazon.com/documentation/kinesis/
