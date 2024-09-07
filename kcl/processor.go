@@ -10,16 +10,12 @@ type (
 		Records    []Record
 		Checkpoint CheckpointFunc `json:"-"`
 	}
-	ShouldCheckpointInput struct {
-		SourceCallType string
-	}
 	LeaseLostInput  struct{}
 	ShardEndedInput struct {
-		Checkpoint CheckpointFunc
+		Checkpoint CheckpointFunc `json:"-"`
 	}
 	ShutdownRequestedInput struct {
-		SequenceNumber string
-		Checkpoint     CheckpointFunc
+		Checkpoint CheckpointFunc `json:"-"`
 	}
 )
 

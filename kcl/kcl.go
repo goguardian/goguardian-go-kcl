@@ -148,7 +148,6 @@ func (k *kclProcess) readLine() ([]byte, error) {
 }
 
 func (k *kclProcess) Run() error {
-	shouldExit := false
 	for {
 		msg, err := k.readMessage()
 		if err != nil {
@@ -175,14 +174,11 @@ func (k *kclProcess) Run() error {
 			k.recordProcessor.ShardEnded(&ShardEndedInput{
 				Checkpoint: k.checkpoint,
 			})
-			shouldExit = true
 
 		case "shutdownRequested":
 			k.recordProcessor.ShutdownRequested(&ShutdownRequestedInput{
-				SequenceNumber: msg.Checkpoint,
-				Checkpoint:     k.checkpoint,
+				Checkpoint: k.checkpoint,
 			})
-			shouldExit = true
 
 		default:
 			return errors.New("unknown message")
@@ -190,10 +186,6 @@ func (k *kclProcess) Run() error {
 
 		if err := k.writeStatus(msg.Action); err != nil {
 			return errors.Wrap(err, "error writing status")
-		}
-
-		if shouldExit {
-			return nil
 		}
 	}
 }
