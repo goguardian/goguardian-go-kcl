@@ -8,7 +8,7 @@ import (
 
 type sampleProcessor struct {
 	logger               *log.Logger
-	latestSequenceNumber string
+	latestSequenceNumber *string
 }
 
 func (s *sampleProcessor) Initialize(input *kcl.InitializationInput) {
@@ -18,10 +18,10 @@ func (s *sampleProcessor) Initialize(input *kcl.InitializationInput) {
 func (s *sampleProcessor) ProcessRecords(input *kcl.ProcessRecordsInput) {
 	s.printInput("ProcessRecords", input)
 	for _, record := range input.Records {
-		s.latestSequenceNumber = record.SequenceNumber
+		s.latestSequenceNumber = &record.SequenceNumber
 	}
 
-	err := input.Checkpoint(&s.latestSequenceNumber)
+	err := input.Checkpoint(s.latestSequenceNumber)
 	if err != nil {
 		s.logger.Printf("Got error %s", err.Error())
 	}
@@ -34,7 +34,10 @@ func (s *sampleProcessor) LeaseLost(input *kcl.LeaseLostInput) {
 func (s *sampleProcessor) ShardEnded(input *kcl.ShardEndedInput) {
 	s.printInput("ShardEnded", input)
 
-	err := input.Checkpoint(&s.latestSequenceNumber)
+	// ShardEnded means the shard is closed and the processor should checkpoint
+	// with a nil sequence number to indicate that it has successfully processed
+	// all records in the shard.
+	err := input.Checkpoint(nil)
 	if err != nil {
 		s.logger.Printf("Got error %s", err.Error())
 	}
@@ -43,9 +46,13 @@ func (s *sampleProcessor) ShardEnded(input *kcl.ShardEndedInput) {
 func (s *sampleProcessor) ShutdownRequested(input *kcl.ShutdownRequestedInput) {
 	s.printInput("ShutdownRequested", input)
 
-	err := input.Checkpoint(&input.SequenceNumber)
-	if err != nil {
-		s.logger.Printf("Got error %s", err.Error())
+	// Upon ShutdownRequested, the record processor has the option to checkpoint; however,
+	// it is not required.
+	if s.latestSequenceNumber != nil {
+		err := input.Checkpoint(s.latestSequenceNumber)
+		if err != nil {
+			s.logger.Printf("Got error %s", err.Error())
+		}
 	}
 }
 
