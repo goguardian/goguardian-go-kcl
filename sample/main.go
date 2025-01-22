@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"time"
 
@@ -11,7 +12,8 @@ import (
 
 func main() {
 	now := time.Now()
-	file, err := os.Create(fmt.Sprintf("sample-log-%d", now.Unix()))
+	uuid := rand.Int31()
+	file, err := os.Create(fmt.Sprintf("sample-log-%d-%d", now.Unix(), uuid))
 	if err != nil {
 		log.Fatal(err)
 	}

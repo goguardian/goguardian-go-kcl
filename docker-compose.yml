@@ -1,16 +1,10 @@
-version: "3.7"
-
 services:
   localstack:
-    image: localstack/localstack
+    container_name: "${LOCALSTACK_DOCKER_NAME:-localstack-main}"
+    image: localstack/localstack:3.7.2
     ports:
-      - "4566:4566"
+      - "127.0.0.1:4566:4566" # LocalStack Gateway
+      - "127.0.0.1:4510-4559:4510-4559" # external services port range
     environment:
-      - HOSTNAME=localstack
-      - HOSTNAME_EXTERNAL=localstack
-      - DEFAULT_REGION=us-east-1
-      - SERVICES=kinesis,dynamodb
-      - DOCKER_HOST=unix:///var/run/docker.sock
-    volumes:
-      - /private/tmp/localstack:/tmp/localstack
-      - /var/run/docker.sock:/var/run/docker.sock
+      # LocalStack configuration: https://docs.localstack.cloud/references/configuration/
+      - DEBUG=${DEBUG:-0}

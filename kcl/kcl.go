@@ -3,6 +3,7 @@ package kcl
 import (
 	"bufio"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -148,9 +149,16 @@ func (k *kclProcess) readLine() ([]byte, error) {
 }
 
 func (k *kclProcess) Run() error {
-	shouldExit := false
 	for {
 		msg, err := k.readMessage()
+
+		// If this process gets an EOF, it probably means the MultiLangDaemon is
+		// shutting down this worker, so just return nil so that this process
+		// can exit gracefully.
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+
 		if err != nil {
 			return err
 		}
@@ -175,14 +183,11 @@ func (k *kclProcess) Run() error {
 			k.recordProcessor.ShardEnded(&ShardEndedInput{
 				Checkpoint: k.checkpoint,
 			})
-			shouldExit = true
 
 		case "shutdownRequested":
 			k.recordProcessor.ShutdownRequested(&ShutdownRequestedInput{
-				SequenceNumber: msg.Checkpoint,
-				Checkpoint:     k.checkpoint,
+				Checkpoint: k.checkpoint,
 			})
-			shouldExit = true
 
 		default:
 			return errors.New("unknown message")
@@ -190,10 +195,6 @@ func (k *kclProcess) Run() error {
 
 		if err := k.writeStatus(msg.Action); err != nil {
 			return errors.Wrap(err, "error writing status")
-		}
-
-		if shouldExit {
-			return nil
 		}
 	}
 }

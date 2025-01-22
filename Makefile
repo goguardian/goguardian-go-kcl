@@ -26,6 +26,6 @@ run_sample: install_jars build_runner build_sample_app
 	./runner/cmd/runner -jar jar -java `which java` -properties sample/sample.properties
 
 run_integ_test: install_jars build_runner build_integration_processor
-	docker-compose up -d && \
+	docker compose up -d && \
 	go test -count=1 -v ./integration-tests && \
-	docker-compose down
+	docker compose down
