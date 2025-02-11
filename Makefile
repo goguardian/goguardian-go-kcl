@@ -22,7 +22,7 @@ clean:
 	rm -f ./sample/sample
 	rm -f ./integration-tests/test-app/test_app
 
-run_sample: install_jars build_runner build_sample_app
+run_sample: clean install_jars build_runner build_sample_app
 	./runner/cmd/runner -jar jar -java `which java` -properties sample/sample.properties
 
 run_integ_test: install_jars build_runner build_integration_processor
