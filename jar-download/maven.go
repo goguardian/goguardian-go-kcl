@@ -25,6 +25,11 @@ const mavenBaseHTTPURL = "https://search.maven.org/remotecontent?filepath="
 
 // To update the packages to newer versions follow instructions here:
 // https://github.com/awslabs/amazon-kinesis-client-python/blob/master/scripts/build_deps.py
+// TODO: Be careful when updating the aws java sdk dependencies:
+// Do not use AWS SDK for Java version 2.27.19 to 2.27.23 with KCL 3.x.
+// These versions include an issue that causes an exception error related to KCL's DynamoDB usage.
+// We recommend that you use the AWS SDK for Java version 2.28.0 or later to avoid this issue.
+// See: https://docs.aws.amazon.com/streams/latest/dev/kcl-migration-from-2-3.html#kcl-migration-from-2-3-prerequisites
 var mavenPackages = []mavenPackage{
 	{"software.amazon.kinesis", "amazon-kinesis-client-multilang", "3.0.0"},
 	{"software.amazon.kinesis", "amazon-kinesis-client", "3.0.0"},
