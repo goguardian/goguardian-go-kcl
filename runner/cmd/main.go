@@ -14,6 +14,7 @@ const (
 	propertiesKey = "properties"
 	javaKey       = "java"
 	jarKey        = "jar"
+	logConfigKey  = "log-configuration"
 )
 
 func main() {
@@ -26,17 +27,26 @@ func main() {
 	var pathToJarFolder string
 	flag.StringVar(&pathToJarFolder, jarKey, "", "The path to the jar dependencies")
 
+	var pathToLogConfig string
+	flag.StringVar(&pathToLogConfig, logConfigKey, "", "(Optional) The path to the logback.xml configuration file")
+
 	flag.Parse()
 
 	pathToJavaBinary = getVariable(javaKey, pathToJavaBinary)
 	pathToPropertiesFile = getVariable(propertiesKey, pathToPropertiesFile)
 	pathToJarFolder = getVariable(jarKey, pathToJarFolder)
 
-	r, err := runner.GetRunner(
+	runnerOptions := []runner.Option{
 		runner.WithPathToJavaBinary(pathToJavaBinary),
 		runner.WithPathToPropertiesFile(pathToPropertiesFile),
 		runner.WithPathToJarFolder(pathToJarFolder),
-	)
+	}
+
+	if pathToLogConfig != "" {
+		runnerOptions = append(runnerOptions, runner.WithLogConfiguration(pathToLogConfig))
+	}
+
+	r, err := runner.GetRunner(runnerOptions...)
 	if err != nil {
 		fmt.Println(err.Error())
 		flag.Usage()
@@ -58,6 +68,11 @@ func main() {
 func getVariable(flagKey, value string) string {
 	if value == "" {
 		value = os.Getenv(strings.ToUpper(flagKey))
+	}
+
+	// For log-configuration, it's optional so don't exit if not provided
+	if flagKey == logConfigKey && value == "" {
+		return ""
 	}
 
 	if value == "" {

@@ -2,6 +2,7 @@ package runner
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -39,12 +40,19 @@ func WithPathToPropertiesFile(p string) Option {
 	}
 }
 
+func WithLogConfiguration(p string) Option {
+	return func(runner *Runner) {
+		runner.pathToLogConfiguration = p
+	}
+}
+
 type Runner struct {
 	logger *log.Logger
 
-	pathToJavaBinary     string
-	pathToPropertiesFile string
-	pathToJarFolder      string
+	pathToJavaBinary       string
+	pathToPropertiesFile   string
+	pathToJarFolder        string
+	pathToLogConfiguration string
 }
 
 func GetRunner(opts ...Option) (*Runner, error) {
@@ -116,6 +124,7 @@ func (r *Runner) RunJavaDaemon(javaProperties ...string) (*exec.Cmd, error) {
 		classpath,
 		daemonClass,
 		r.pathToPropertiesFile,
+		fmt.Sprintf("-Dlogback.configurationFile=%s", r.pathToLogConfiguration),
 	}
 	args = append(javaProperties, args...)
 
