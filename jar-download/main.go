@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 )
 
 // Credit to https://github.com/arthurbailao/aws-kcl/blob/master/cmd/aws-kcl/download.go
@@ -16,10 +17,28 @@ func main() {
 		dstFolder = os.Args[1]
 	}
 
-	d := getDownloader()
+	mavenBaseURL := "https://repo1.maven.org/maven2/"
+	if os.Getenv("MAVEN_BASE_URL") != "" {
+		mavenBaseURL = os.Getenv("MAVEN_BASE_URL")
+	}
+	fmt.Printf("Using Maven base URL: %s\n", mavenBaseURL)
+
+	maxRetries := 3
+	if os.Getenv("MAX_MAVEN_HTTP_RETRIES") != "" {
+		var err error
+		maxRetries, err = strconv.Atoi(os.Getenv("MAX_MAVEN_HTTP_RETRIES"))
+		if err != nil {
+			fmt.Printf("failed to parse MAX_MAVEN_HTTP_RETRIES: %+v\n", err)
+			os.Exit(1)
+		}
+	}
+	fmt.Printf("Using max Maven HTTP retries: %d\n", maxRetries)
+
+	d := getDownloader(maxRetries, mavenBaseURL)
 	err := d.download(dstFolder)
 	if err != nil {
 		fmt.Printf("failed to download due to error: %+v\n", err)
+		os.Exit(1)
 	}
 
 	fmt.Println("Completed download")
