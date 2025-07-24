@@ -21,14 +21,14 @@ type downloader struct {
 	packages     []mavenPackage
 }
 
-func getDownloader() *downloader {
+func getDownloader(maxRetries int, mavenBaseURL string) *downloader {
 	return &downloader{
-		maxRetries: 3,
+		maxRetries: maxRetries,
 		backoff:    500 * time.Millisecond,
 		httpClient: &http.Client{},
 
 		packages:     mavenPackages,
-		mavenBaseURL: mavenBaseHTTPURL,
+		mavenBaseURL: mavenBaseURL,
 	}
 }
 

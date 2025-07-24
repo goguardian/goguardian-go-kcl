@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -16,7 +15,7 @@ func TestDownload(t *testing.T) {
 	}))
 	defer server.Close()
 
-	d := getDownloader()
+	d := getDownloader(3, server.URL+"/")
 	d.packages = []mavenPackage{
 		{
 			Artifact: "some.artifact.path",
@@ -24,9 +23,8 @@ func TestDownload(t *testing.T) {
 			Version:  "1.2.3",
 		},
 	}
-	d.mavenBaseURL = server.URL + "/?filename="
 
-	tempDir, err := ioutil.TempDir("", "someDir")
+	tempDir, err := os.MkdirTemp("", "someDir")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,12 +38,7 @@ func TestDownload(t *testing.T) {
 
 	// Validate file is saved properly
 	downloadedFile := path.Join(tempDir, "some.artifact.path-1.2.3.jar")
-	file, err := os.Open(downloadedFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	data, err := ioutil.ReadAll(file)
+	data, err := os.ReadFile(downloadedFile)
 	if err != nil {
 		t.Fatal(err)
 	}
