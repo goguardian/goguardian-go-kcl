@@ -21,8 +21,6 @@ func (pkg *mavenPackage) Name() string {
 	return fmt.Sprintf("%s-%s.jar", pkg.Artifact, pkg.Version)
 }
 
-const mavenBaseHTTPURL = "https://search.maven.org/remotecontent?filepath="
-
 // To update the packages to newer versions follow instructions here:
 // https://github.com/awslabs/amazon-kinesis-client-python/blob/master/scripts/build_deps.py
 // TODO: Be careful when updating the aws java sdk dependencies:
