@@ -21,7 +21,7 @@ func main() {
 	if os.Getenv("MAVEN_BASE_URL") != "" {
 		mavenBaseURL = os.Getenv("MAVEN_BASE_URL")
 	}
-	fmt.Printf("Using Maven base URL: %s\n", mavenBaseURL)
+	fmt.Printf("Using Maven base URL: %s\n", redactURL(mavenBaseURL))
 
 	maxRetries := 3
 	if os.Getenv("MAX_MAVEN_HTTP_RETRIES") != "" {
