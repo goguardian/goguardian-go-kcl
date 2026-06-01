@@ -8,6 +8,39 @@ import (
 	"testing"
 )
 
+func TestRedactURL(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "redacts password from URL with basic auth credentials",
+			input:    "https://aws:supersecrettoken@example.d.codeartifact.us-west-2.amazonaws.com/maven/repo/",
+			expected: "https://aws:xxxxx@example.d.codeartifact.us-west-2.amazonaws.com/maven/repo/",
+		},
+		{
+			name:     "leaves URL without credentials unchanged",
+			input:    "https://repo1.maven.org/maven2/",
+			expected: "https://repo1.maven.org/maven2/",
+		},
+		{
+			name:     "returns invalid URL unchanged",
+			input:    "not a url ://bad",
+			expected: "not a url ://bad",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := redactURL(tt.input)
+			if got != tt.expected {
+				t.Errorf("redactURL(%q) = %q, want %q", tt.input, got, tt.expected)
+			}
+		})
+	}
+}
+
 func TestDownload(t *testing.T) {
 	// Setup
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
