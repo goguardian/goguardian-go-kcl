@@ -5,12 +5,21 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"time"
 
 	"github.com/pkg/errors"
 )
+
+func redactURL(rawURL string) string {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+	return u.Redacted()
+}
 
 type downloader struct {
 	maxRetries int
@@ -62,7 +71,7 @@ func (d *downloader) downloadFileWithRetry(src, dst string) error {
 	backoff := d.backoff
 
 	for i := 0; i < d.maxRetries; i++ {
-		fmt.Printf("Downloading %s to %s\n", src, dst)
+		fmt.Printf("Downloading %s to %s\n", redactURL(src), dst)
 		err = d.downloadFile(src, dst)
 		if err == nil {
 			break
