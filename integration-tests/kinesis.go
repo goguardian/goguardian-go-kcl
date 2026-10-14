@@ -1,59 +1,64 @@
 package integration_tests
 
 import (
-	"strings"
+	"context"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/kinesis"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/kinesis"
+	"github.com/aws/aws-sdk-go-v2/service/kinesis/types"
 	"github.com/pkg/errors"
 )
 
 const localstackEndpoint = "http://localhost:4566"
 
 type localKinesis struct {
-	kClient *kinesis.Kinesis
+	kClient *kinesis.Client
 }
 
 func GetLocalKinesisClient() (*localKinesis, error) {
-	awsConfig := &aws.Config{
-		Endpoint: aws.String(localstackEndpoint),
-		Region:   aws.String("us-east-1"),
-		Credentials: credentials.NewCredentials(&credentials.StaticProvider{
-			Value: credentials.Value{
-				AccessKeyID:     "anyAccessKeyID",
-				SecretAccessKey: "anySecretAccessKeyID",
-			},
-		}),
+	awsConfig, err := config.LoadDefaultConfig(
+		context.Background(),
+		config.WithRegion("us-east-1"),
+		config.WithCredentialsProvider(
+			credentials.NewStaticCredentialsProvider("anyAccessKeyID", "anySecretAccessKeyID", ""),
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to load aws config")
 	}
 
-	err := waitForLocalstack(30 * time.Second)
+	err = waitForLocalstack(30 * time.Second)
 	if err != nil {
 		errors.New("localstack is not running yet")
 	}
 
 	return &localKinesis{
-		kClient: kinesis.New(session.Must(session.NewSession(awsConfig))),
+		kClient: kinesis.NewFromConfig(awsConfig, func(o *kinesis.Options) {
+			o.BaseEndpoint = aws.String(localstackEndpoint)
+		}),
 	}, nil
 }
 
-func (t *localKinesis) CreateStream(streamName string, shardCount int64, timeout time.Duration) error {
+func (t *localKinesis) CreateStream(streamName string, shardCount int32, timeout time.Duration) error {
 	ticker := time.NewTicker(timeout)
 	defer ticker.Stop()
 
 	for {
 		resp, err := t.kClient.DescribeStream(
+			context.Background(),
 			&kinesis.DescribeStreamInput{
 				StreamName: &streamName,
 			},
 		)
 		// Create it if it doesn't exist
 		if err != nil {
-			if e, ok := err.(awserr.Error); ok && strings.Contains(e.Code(), "ResourceNotFoundException") {
+			var notFound *types.ResourceNotFoundException
+			if errors.As(err, &notFound) {
 				t.kClient.CreateStream(
+					context.Background(),
 					&kinesis.CreateStreamInput{
 						ShardCount: &shardCount,
 						StreamName: &streamName,
@@ -63,7 +68,7 @@ func (t *localKinesis) CreateStream(streamName string, shardCount int64, timeout
 			}
 		}
 
-		if err == nil && *resp.StreamDescription.StreamStatus == "ACTIVE" {
+		if err == nil && resp.StreamDescription.StreamStatus == types.StreamStatusActive {
 			return nil
 		}
 
@@ -78,16 +83,15 @@ func (t *localKinesis) CreateStream(streamName string, shardCount int64, timeout
 
 func (t *localKinesis) DeleteStream(streamName string, timeout time.Duration) error {
 	_, err := t.kClient.DeleteStream(
+		context.Background(),
 		&kinesis.DeleteStreamInput{
 			StreamName: &streamName,
 		},
 	)
 	if err != nil {
-		switch e := err.(type) {
-		case awserr.Error:
-			if strings.Contains(e.Code(), "ResourceNotFoundException") {
-				return nil // stream already deleted
-			}
+		var notFound *types.ResourceNotFoundException
+		if errors.As(err, &notFound) {
+			return nil // stream already deleted
 		}
 		return errors.Wrap(err, "failed to delete stream")
 	}
@@ -95,9 +99,10 @@ func (t *localKinesis) DeleteStream(streamName string, timeout time.Duration) er
 	ticker := time.Tick(timeout)
 	for {
 		resp, err := t.kClient.ListStreams(
+			context.Background(),
 			&kinesis.ListStreamsInput{
 				ExclusiveStartStreamName: &streamName,
-				Limit:                    aws.Int64(1),
+				Limit:                    aws.Int32(1),
 			},
 		)
 		if err != nil {
@@ -106,7 +111,7 @@ func (t *localKinesis) DeleteStream(streamName string, timeout time.Duration) er
 
 		found := false
 		for _, name := range resp.StreamNames {
-			if *name == streamName {
+			if name == streamName {
 				found = true
 			}
 		}
@@ -124,16 +129,17 @@ func (t *localKinesis) DeleteStream(streamName string, timeout time.Duration) er
 }
 
 func (t *localKinesis) PutRecords(streamName string, records []string) error {
-	entries := []*kinesis.PutRecordsRequestEntry{}
+	entries := []types.PutRecordsRequestEntry{}
 	for _, record := range records {
 		record := record
-		entries = append(entries, &kinesis.PutRecordsRequestEntry{
+		entries = append(entries, types.PutRecordsRequestEntry{
 			Data:         []byte(record),
 			PartitionKey: &record,
 		})
 	}
 
 	resp, err := t.kClient.PutRecords(
+		context.Background(),
 		&kinesis.PutRecordsInput{
 			StreamName: &streamName,
 			Records:    entries,

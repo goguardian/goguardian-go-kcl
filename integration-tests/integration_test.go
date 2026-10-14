@@ -104,7 +104,7 @@ func TestRecordsReceived(t *testing.T) {
 	var cmd *exec.Cmd
 	go func() {
 		var err error
-		cmd, err = r.RunJavaDaemon("-Daws.accessKeyId=some_key", "-Daws.secretKey=some_secret_key")
+		cmd, err = r.RunJavaDaemon("-Daws.accessKeyId=some_key", "-Daws.secretAccessKey=some_secret_key")
 		if err != nil {
 			t.Fatal(err)
 		}
